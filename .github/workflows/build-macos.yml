@@ -47,7 +47,7 @@ jobs:
           npm run build:backend:mac
           chmod +x backend-dist/atelier-backend
       - name: Build DMG
-        run: npx electron-builder --mac dmg --${{ matrix.arch }}
+        run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: Atelier-Docs-${{ matrix.arch }}
