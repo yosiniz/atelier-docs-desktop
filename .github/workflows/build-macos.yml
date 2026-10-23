@@ -1,4 +1,4 @@
-name: Build macOS DMG
+name: Build Desktop Installers
 
 on:
   workflow_dispatch:
@@ -54,9 +54,45 @@ jobs:
           path: release/*.dmg
           if-no-files-found: error
 
+  build-windows:
+    name: Windows
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          npm ci
+          python -m pip install -r requirements-build.txt
+      - name: Verify application
+        run: |
+          npm run typecheck
+          npm run test:frontend
+          python -m pytest backend/tests -q
+      - name: Build frontend and native backend
+        run: |
+          npm run build
+          python -m PyInstaller --noconfirm --clean --onefile --name atelier-backend --distpath backend-dist --workpath build/pyinstaller --specpath build backend/run_server.py
+      - name: Build EXE installer
+        run: npx electron-builder --win nsis --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Atelier-Docs-windows
+          path: release/*Setup.exe
+          if-no-files-found: error
+
   release:
     name: Publish release
-    needs: build
+    needs: [build, build-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,8 +107,12 @@ jobs:
         run: |
           version="$(node -p "require('./package.json').version")"
           cd release
-          shasum -a 256 *.dmg > SHA256SUMS.txt
-          gh release create "v${version}" ./*.dmg SHA256SUMS.txt \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "Atelier Docs ${version}" \
-            --notes "macOS için Apple Silicon ve Intel DMG paketleri. Paketler henüz Apple Developer kimliğiyle imzalanmamış ve noterlenmemiştir."
+          shasum -a 256 *.dmg *.exe > SHA256SUMS.txt
+          if gh release view "v${version}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "v${version}" ./*.dmg ./*.exe SHA256SUMS.txt --clobber --repo "${GITHUB_REPOSITORY}"
+          else
+            gh release create "v${version}" ./*.dmg ./*.exe SHA256SUMS.txt \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "Atelier Docs ${version}" \
+              --notes "Windows EXE ile macOS Apple Silicon ve Intel DMG paketleri. Paketler henüz ticari kod imzalama kimlikleriyle imzalanmamış/noterlenmemiştir."
+          fi

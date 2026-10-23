@@ -58,7 +58,7 @@ npm run dist:win
 
 ## macOS DMG paketleri
 
-GitHub Actions iş akışı Apple Silicon (`arm64`) ve Intel (`x64`) için ayrı DMG paketleri üretir. GitHub üzerindeki **Build macOS DMG** iş akışı elle çalıştırıldığında testleri yürütür, yerel Python belge motorunu hedef mimaride paketler ve iki DMG dosyasını aynı sürüm kaydına ekler.
+GitHub Actions iş akışı Windows EXE ile Apple Silicon (`arm64`) ve Intel (`x64`) için ayrı DMG paketleri üretir. GitHub üzerindeki **Build Desktop Installers** iş akışı elle çalıştırıldığında testleri yürütür, yerel Python belge motorunu her hedef mimaride paketler ve üç kurulum dosyasını aynı sürüm kaydına ekler.
 
 Yerel macOS geliştirme ortamında paket oluşturmak için:
 
