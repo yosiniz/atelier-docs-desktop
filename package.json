@@ -1,6 +1,6 @@
 {
   "name": "atelier-docs-desktop",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Atelier Docs",
   "private": true,
   "type": "module",
@@ -81,6 +81,8 @@
       "artifactName": "Atelier-Docs-${version}-${arch}.${ext}",
       "icon": "assets/app-icon.png",
       "category": "public.app-category.productivity",
+      "identity": "-",
+      "minimumSystemVersion": "12.0",
       "hardenedRuntime": false
     },
     "nsis": {

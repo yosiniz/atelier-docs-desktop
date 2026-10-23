@@ -17,7 +17,7 @@
 # macOS dağıtımı
 
 - macOS DMG paketleri Apple Silicon ve Intel için ayrı üretilir.
-- Apple Developer sertifikası ve noterleme kimlik bilgileri sağlanmadığı için DMG paketleri imzalı/noterlenmiş değildir; Gatekeeper ilk açılışta kullanıcı onayı isteyebilir.
+- DMG paketleri ad-hoc imzalıdır ve CI içinde DMG içinden başlatılarak sınanır. Apple Developer sertifikası ve noterleme kimlik bilgileri sağlanmadığı için Gatekeeper ilk açılışta yine kullanıcı onayı isteyebilir; uyarısız çift tıklama deneyimi ancak Developer ID imzası ve Apple noterlemesiyle sağlanabilir.
 - LibreOffice ve Tesseract gibi harici araçlara bağlı işlevler, bu araçlar Mac üzerinde ayrıca kurulu değilse yerel geri dönüş yöntemlerini kullanır veya kullanılamaz olarak gösterilir.
 
 # WhatsApp entegrasyonu

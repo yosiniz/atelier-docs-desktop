@@ -48,6 +48,38 @@ jobs:
           chmod +x backend-dist/atelier-backend
       - name: Build DMG
         run: npx electron-builder --mac dmg --${{ matrix.arch }} --publish never
+      - name: Verify packaged macOS application
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmg_path="$(find release -maxdepth 1 -name '*.dmg' -print -quit)"
+          test -n "$dmg_path"
+          mount_path="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "$mount_path" -quiet || true
+            rmdir "$mount_path" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          hdiutil attach "$dmg_path" -mountpoint "$mount_path" -nobrowse -readonly -quiet
+          app_path="$mount_path/Atelier Docs.app"
+          test -d "$app_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          test -x "$app_path/Contents/Resources/backend/atelier-backend"
+          file "$app_path/Contents/MacOS/Atelier Docs"
+          file "$app_path/Contents/Resources/backend/atelier-backend"
+          smoke_output="$RUNNER_TEMP/atelier-docs-smoke-${{ matrix.arch }}.json"
+          ATELIER_SMOKE_OUTPUT="$smoke_output" \
+            "$app_path/Contents/MacOS/Atelier Docs" --smoke-test
+          python3 - "$smoke_output" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          result = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          if not result.get("ok"):
+              raise SystemExit("Paketlenmiş macOS uygulaması smoke testini geçemedi")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: Atelier-Docs-${{ matrix.arch }}
@@ -114,5 +146,5 @@ jobs:
             gh release create "v${version}" ./*.dmg ./*.exe SHA256SUMS.txt \
               --repo "${GITHUB_REPOSITORY}" \
               --title "Atelier Docs ${version}" \
-              --notes "Windows EXE ile macOS Apple Silicon ve Intel DMG paketleri. Paketler henüz ticari kod imzalama kimlikleriyle imzalanmamış/noterlenmemiştir."
+              --notes "Windows EXE ile macOS Apple Silicon ve Intel DMG paketleri. macOS paketleri DMG içinden gerçek uygulama ve yerel backend başlatılarak doğrulanmış ve ad-hoc imzalanmıştır. Apple Developer ID/noter kaydı bulunmadığından ilk açılışta Finder'da uygulamaya sağ tıklayıp Aç seçilmesi gerekebilir."
           fi

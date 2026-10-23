@@ -55,11 +55,11 @@ Windows kurulum paketi:
 npm run dist:win
 ```
 
-`dist:win` en yeni kurulum paketini üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.2.0-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
+`dist:win` en yeni kurulum paketini üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.2.1-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
 
 ## macOS DMG paketleri
 
-GitHub Actions iş akışı Windows EXE ile Apple Silicon (`arm64`) ve Intel (`x64`) için ayrı DMG paketleri üretir. GitHub üzerindeki **Build Desktop Installers** iş akışı elle çalıştırıldığında testleri yürütür, yerel Python belge motorunu her hedef mimaride paketler ve üç kurulum dosyasını aynı sürüm kaydına ekler.
+GitHub Actions iş akışı Windows EXE ile Apple Silicon (`arm64`) ve Intel (`x64`) için ayrı DMG paketleri üretir. GitHub üzerindeki **Build Desktop Installers** iş akışı elle çalıştırıldığında testleri yürütür, yerel Python belge motorunu her hedef mimaride paketler, DMG'yi bağlar ve içindeki gerçek uygulamayı backend ile birlikte başlatan smoke testini geçmeden yayına izin vermez.
 
 Yerel macOS geliştirme ortamında paket oluşturmak için:
 
@@ -70,7 +70,7 @@ npm ci
 npm run dist:mac
 ```
 
-Apple Developer sertifikası ve noterleme bilgileri yapılandırılmadığından mevcut DMG paketleri imzasızdır. İlk açılışta macOS Gatekeeper kullanıcı onayı isteyebilir.
+DMG içindeki uygulama bütünlük kontrolü için ad-hoc imzalanır. Apple Developer ID ve noterleme bilgileri yapılandırılmadığından internetten indirilen paketin ilk açılışında macOS Gatekeeper uyarı gösterebilir. Doğru paketi seçin: M1/M2/M3/M4/M5 için `arm64`, Intel işlemcili Mac için `x64`. DMG'yi açıp **Atelier Docs** uygulamasını **Applications/Uygulamalar** klasörüne sürükleyin; ilk açılış engellenirse Finder'da uygulamaya sağ tıklayıp **Aç** seçin.
 
 ## WhatsApp botu
 

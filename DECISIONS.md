@@ -68,7 +68,7 @@
 
 - **Karar:** Apple Silicon ve Intel DMG paketleri ayrı macOS GitHub Actions çalıştırıcılarında üretilecek.
 - **Gerekçe:** PyInstaller ile paketlenen Python motorunun Electron uygulamasıyla aynı CPU mimarisinde olması gerekir. Windows üzerinde güvenilir ve doğrulanabilir DMG üretimi desteklenmez.
-- **Sonuç:** Her DMG kendi mimarisine ait yerel backend ikilisini içerir. Kod imzalama ve noterleme, Apple Developer kimlik bilgileri sağlanana kadar devre dışıdır.
+- **Sonuç:** Her DMG kendi mimarisine ait yerel backend ikilisini içerir. Uygulama ad-hoc imzalanır; CI, DMG'yi bağlayıp kod imzasını ve gerçek uygulama/backend açılışını doğrular. Apple Developer kimlik bilgileri sağlanana kadar Developer ID imzası ve noterleme yapılamaz.
 
 # ADR-015 — WhatsApp için resmi Cloud API ve bağımsız bot servisi
 

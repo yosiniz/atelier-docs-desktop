@@ -2,6 +2,7 @@
 
 ## 23 Ekim 2026
 
+- 0.2.1 macOS dağıtımı: DMG içeriği ad-hoc imzaya geçirildi; minimum macOS 12 belirtildi; Apple Silicon ve Intel işlerinde DMG bağlama, derin kod imzası kontrolü, yerel backend varlık/mimari kontrolü ve paketlenmiş uygulama smoke testi yayın kapısı yapıldı.
 - Electron başlatıcısı Windows ve macOS için platform bağımsız yerel backend seçimine geçirildi.
 - macOS sistem fontları ve iki platformun yol ayıraçlarını güvenli işleyen dosya adı temizleme desteği eklendi.
 - Kaynak kod `yosiniz/atelier-docs-desktop` adlı yeni özel GitHub reposuna yüklendi.
