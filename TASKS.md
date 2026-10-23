@@ -75,3 +75,6 @@
 - [ ] Paketlenmiş Electron arayüzü için tam otomatik UI E2E paketi
 - [ ] Otomatik güncelleme ve imzalı kurulum
 - [x] Yerel yeni paketlerde eski sürümü kaldırma, yeni sürümü kurma ve otomatik başlatma
+- [x] Apple Silicon ve Intel için ayrı macOS DMG paketleri
+- [x] GitHub Actions üzerinde macOS test, paketleme ve Release yayın akışı
+- [ ] Apple Developer imzası ve noterleme

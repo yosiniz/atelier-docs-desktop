@@ -1,5 +1,13 @@
 # İlerleme
 
+## 23 Ekim 2026
+
+- Electron başlatıcısı Windows ve macOS için platform bağımsız yerel backend seçimine geçirildi.
+- macOS sistem fontları ve iki platformun yol ayıraçlarını güvenli işleyen dosya adı temizleme desteği eklendi.
+- Kaynak kod `yosiniz/atelier-docs-desktop` adlı yeni özel GitHub reposuna yüklendi.
+- GitHub Actions üzerinde Apple Silicon ve Intel çalıştırıcılarında 4 frontend ve 41 backend testi ayrı ayrı geçti.
+- `Atelier-Docs-0.1.8-arm64.dmg` ve `Atelier-Docs-0.1.8-x64.dmg` üretildi; SHA-256 dosyasıyla birlikte `v0.1.8` GitHub Release olarak yayımlandı.
+
 ## 22 Ekim 2026
 
 - Boş repository analiz edildi; Node 24.14 ve Python 3.13 bulundu.
@@ -52,10 +60,13 @@
 - Boyut: 181.327.466 bayt (172,93 MiB)
 - SHA-256: `EAF96CC8AE6B5AF98CB66DEADDB58BA28A56CDC35349B44FA0080B03654B3EB4`
 - Durum: TypeScript strict kontrolü, 4 frontend testi, 41 backend testi ve kurulu uygulama açılış testi geçti. 0.1.8 kullanıcı profiline kuruldu, eski kurulum paketleri kaldırıldı ve uygulama başlatıldı.
+- Apple Silicon DMG: `Atelier-Docs-0.1.8-arm64.dmg` — 199.269.863 bayt — SHA-256 `ff662a523b4ad5d23796b0aaa2e3edb98d1e6213dd1e11c9fdbcbf3a6152d59f`
+- Intel DMG: `Atelier-Docs-0.1.8-x64.dmg` — 207.484.710 bayt — SHA-256 `5ec8ed0033e03ff0fa98a276289b012863fe6c496683da37dcdd81741dc59d7c`
+- GitHub Release: `https://github.com/yosiniz/atelier-docs-desktop/releases/tag/v0.1.8`
 
 ## Harici gereksinim veya ileri kapsam
 
-1. Kod imzalama sertifikası ve yayın uç noktası sağlandığında Authenticode ve internet üzerinden otomatik paket indirme/güncelleme.
+1. Windows ve Apple Developer kod imzalama/noterleme kimlikleri sağlandığında imzalı paketler ve internet üzerinden otomatik güncelleme.
 2. Tesseract çalıştırılabiliri/dil paketleri sağlandığında dağıtım ortamında gerçek taranmış belge kabul testi.
 3. Microsoft Office bulunmayan Windows sistemlerinde yüksek uyum için paketlenebilir LibreOffice alternatifi.
 4. Paketlenmiş Electron arayüzü için ayrı tam otomatik UI E2E test paketi.
