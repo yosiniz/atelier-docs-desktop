@@ -61,13 +61,13 @@
 
 ## Son doğrulanan çıktı
 
-- Dosya: `release/Atelier-Docs-0.1.8-Setup.exe`
-- Boyut: 181.327.466 bayt (172,93 MiB)
-- SHA-256: `EAF96CC8AE6B5AF98CB66DEADDB58BA28A56CDC35349B44FA0080B03654B3EB4`
-- Durum: TypeScript strict kontrolü, 4 frontend testi, 41 backend testi ve kurulu uygulama açılış testi geçti. 0.1.8 kullanıcı profiline kuruldu, eski kurulum paketleri kaldırıldı ve uygulama başlatıldı.
-- Apple Silicon DMG: `Atelier-Docs-0.1.8-arm64.dmg` — 199.269.863 bayt — SHA-256 `ff662a523b4ad5d23796b0aaa2e3edb98d1e6213dd1e11c9fdbcbf3a6152d59f`
-- Intel DMG: `Atelier-Docs-0.1.8-x64.dmg` — 207.484.710 bayt — SHA-256 `5ec8ed0033e03ff0fa98a276289b012863fe6c496683da37dcdd81741dc59d7c`
-- GitHub Release: `https://github.com/yosiniz/atelier-docs-desktop/releases/tag/v0.1.8`
+- Dosya: `release/Atelier-Docs-0.2.0-Setup.exe`
+- Boyut: 182.183.762 bayt (173,74 MiB)
+- SHA-256: `ed3fc6587bcbfc06eedce8f309224bcfc585751e700016d5d2ea0b870d32ba69`
+- Durum: 4 frontend ve 47 backend testi Windows, Apple Silicon ve Intel CI ortamlarında geçti. 0.2.0 kullanıcı profiline kuruldu, eski sürüm ve kurulum paketi kaldırıldı; kurulu uygulama smoke testi geçti ve pencere başlatıldı.
+- Apple Silicon DMG: `Atelier-Docs-0.2.0-arm64.dmg` — 201.569.731 bayt — SHA-256 `09cf9fc3dd53d2cb6dc05ce8098b16ba9d627892aaefc9f29ed2cffb283b46d0`
+- Intel DMG: `Atelier-Docs-0.2.0-x64.dmg` — 209.732.682 bayt — SHA-256 `25da334a41450b46d7b9afe5065061ed57283386289ed4bcf54cd86d86a4de5e`
+- GitHub Release: `https://github.com/yosiniz/atelier-docs-desktop/releases/tag/v0.2.0`
 
 ## Harici gereksinim veya ileri kapsam
 
