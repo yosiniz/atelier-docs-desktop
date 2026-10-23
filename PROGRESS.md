@@ -3,6 +3,10 @@
 ## 23 Ekim 2026
 
 - 0.2.1 macOS dağıtımı: DMG içeriği ad-hoc imzaya geçirildi; minimum macOS 12 belirtildi; Apple Silicon ve Intel işlerinde DMG bağlama, derin kod imzası kontrolü, yerel backend varlık/mimari kontrolü ve paketlenmiş uygulama smoke testi yayın kapısı yapıldı.
+- `v0.2.1` yayın doğrulaması tamamlandı: Apple Silicon uygulama/backend ikilisi `arm64`, Intel uygulama/backend ikilisi `x86_64` olarak doğrulandı; iki DMG de `codesign --verify --deep --strict` ve gerçek açılış smoke testini geçti (`ok: true`, başlık `Atelier Docs`, arayüz metni 1198 karakter).
+- Apple Silicon DMG: `Atelier-Docs-0.2.1-arm64.dmg` — SHA-256 `48dfd51c473bf9aa7bd913970aa57af5794d47eed286198f32a2b89f3f4f5fd2`
+- Intel DMG: `Atelier-Docs-0.2.1-x64.dmg` — SHA-256 `7d522341693b89d46d7c7c0e76bb11fea0d18773d731551e9a0b10797eacb41e`
+- GitHub Release: `https://github.com/yosiniz/atelier-docs-desktop/releases/tag/v0.2.1`
 - Electron başlatıcısı Windows ve macOS için platform bağımsız yerel backend seçimine geçirildi.
 - macOS sistem fontları ve iki platformun yol ayıraçlarını güvenli işleyen dosya adı temizleme desteği eklendi.
 - Kaynak kod `yosiniz/atelier-docs-desktop` adlı yeni özel GitHub reposuna yüklendi.
