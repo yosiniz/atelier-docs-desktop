@@ -37,3 +37,9 @@ Bu yöntem yalnızca beyaz kutu bindirme değildir. Karmaşık alt-küme fontlar
 - OOXML paketleri giriş sayısı ve toplam açılmış boyut sınırlarıyla ZIP bombalarına karşı kontrol edilir.
 - Ağır sıkıştırma işlemleri iki işçiyle sınırlı kuyrukta çalışır; durum, ilerleme ve iptal API'si sunulur.
 - Uygulamanın UUID biçimli ve 72 saatten eski geçici çalışma alanları başlangıçta temizlenir.
+# WhatsApp entegrasyonu
+
+- `backend/app/integrations/whatsapp.py`: Meta webhook doğrulaması, HMAC imza denetimi ve durum uç noktası.
+- `backend/app/services/whatsapp_service.py`: Mesaj oturumu, komut eşleme, medya indirme/yükleme, dönüşüm yönlendirme ve geçici dosya yaşam döngüsü.
+- Webhook isteği hızlı yanıt verir; indirme, dönüşüm ve geri gönderim iki iş parçacıklı sınırlı yürütücüde yapılır.
+- Bot sunucusu `Dockerfile.whatsapp` ve `docker-compose.whatsapp.yml` ile masaüstü uygulamasından bağımsız çalıştırılabilir.

@@ -78,3 +78,8 @@
 - [x] Apple Silicon ve Intel için ayrı macOS DMG paketleri
 - [x] GitHub Actions üzerinde macOS test, paketleme ve Release yayın akışı
 - [ ] Apple Developer imzası ve noterleme
+- [x] Resmi WhatsApp Business Cloud API webhook entegrasyonu
+- [x] WhatsApp dosya/komut oturumu ve dönüşüm sonucu gönderimi
+- [x] Webhook HMAC doğrulaması, mesaj tekilleştirme ve numara izin listesi
+- [x] WhatsApp botu Docker dağıtımı ve kurulum belgesi
+- [ ] Meta üretim hesabı ve telefon numarasıyla canlı kabul testi

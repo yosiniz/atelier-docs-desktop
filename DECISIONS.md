@@ -70,3 +70,9 @@
 - **Gerekçe:** PyInstaller ile paketlenen Python motorunun Electron uygulamasıyla aynı CPU mimarisinde olması gerekir. Windows üzerinde güvenilir ve doğrulanabilir DMG üretimi desteklenmez.
 - **Sonuç:** Her DMG kendi mimarisine ait yerel backend ikilisini içerir. Kod imzalama ve noterleme, Apple Developer kimlik bilgileri sağlanana kadar devre dışıdır.
 
+# ADR-015 — WhatsApp için resmi Cloud API ve bağımsız bot servisi
+
+- **Karar:** Kişisel WhatsApp Web otomasyonu yerine resmi WhatsApp Business Cloud API kullanılacak; bot aynı FastAPI kod tabanında fakat bağımsız Docker servisi olarak çalıştırılabilecek.
+- **Gerekçe:** Webhook imzası, medya kimlikleri, kurallı gönderim akışı ve hesap uyumluluğu resmi API ile sürdürülebilir biçimde yönetilebilir.
+- **Sonuç:** Masaüstü dönüşüm motoru yeniden kullanılır. Canlı bağlantı yalnızca ortam değişkenlerinden alınan Meta kimlik bilgileriyle etkinleşir; gizli bilgiler repoya girmez.
+

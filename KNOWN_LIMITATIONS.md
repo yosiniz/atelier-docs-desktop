@@ -20,3 +20,10 @@
 - Apple Developer sertifikası ve noterleme kimlik bilgileri sağlanmadığı için DMG paketleri imzalı/noterlenmiş değildir; Gatekeeper ilk açılışta kullanıcı onayı isteyebilir.
 - LibreOffice ve Tesseract gibi harici araçlara bağlı işlevler, bu araçlar Mac üzerinde ayrıca kurulu değilse yerel geri dönüş yöntemlerini kullanır veya kullanılamaz olarak gösterilir.
 
+# WhatsApp entegrasyonu
+
+- Canlı kullanım için kullanıcıya ait Meta Business hesabı, WhatsApp telefon numarası, erişim anahtarı, uygulama sırrı ve herkese açık HTTPS webhook alan adı gerekir.
+- Bu kimlik bilgileri paylaşılmadığı için canlı WhatsApp kabul testi henüz yapılmadı; webhook, imza, oturum ve dönüşüm davranışları otomatik testlerle doğrulandı.
+- WhatsApp ve Meta'nın medya biçimi/boyutu politikaları uygulamanın kendi sınırlarından daha dar olabilir.
+- Çok sayfalı PDF → görsel dönüşümünde her sayfa ayrı WhatsApp mesajı olarak gönderilir.
+

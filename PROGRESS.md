@@ -7,6 +7,11 @@
 - Kaynak kod `yosiniz/atelier-docs-desktop` adlı yeni özel GitHub reposuna yüklendi.
 - GitHub Actions üzerinde Apple Silicon ve Intel çalıştırıcılarında 4 frontend ve 41 backend testi ayrı ayrı geçti.
 - `Atelier-Docs-0.1.8-arm64.dmg` ve `Atelier-Docs-0.1.8-x64.dmg` üretildi; SHA-256 dosyasıyla birlikte `v0.1.8` GitHub Release olarak yayımlandı.
+- Resmi WhatsApp Business Cloud API için webhook doğrulama, HMAC imza kontrolü, medya indirme/yükleme ve yanıt dosyası gönderme modülü eklendi.
+- Dosya ile komut aynı mesajda veya 30 dakika içinde art arda gönderilebilir; komut ve dosya sırası bağımsızdır.
+- PDF→Word/PNG/JPG, PDF sıkıştırma, görsel format/PDF ve Office→PDF komutları mevcut dönüşüm motoruna bağlandı.
+- Numara izin listesi, mesaj tekilleştirme, gerçek dosya türü ve SHA-256 doğrulaması, boyut sınırları ve işlem sonrası geçici dosya temizliği eklendi.
+- WhatsApp entegrasyonuyla birlikte 47 backend ve 4 frontend testi geçti; Docker Compose yapılandırması statik olarak doğrulandı.
 
 ## 22 Ekim 2026
 

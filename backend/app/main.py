@@ -55,6 +55,8 @@ from .services.pdf_service import (
     remove_watermarks,
 )
 from .storage import cleanup_stale_workspaces, current_document_path, document_dir, operation_history, record_operation, restore_revision, save_upload, snapshot_revision
+from .integrations.whatsapp import router as whatsapp_router
+from .services.whatsapp_service import whatsapp_bot
 
 
 @asynccontextmanager
@@ -63,7 +65,8 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title=APP_NAME, version="0.1.8", docs_url="/api/docs", lifespan=lifespan)
+app = FastAPI(title=APP_NAME, version="0.2.0", docs_url="/api/docs", lifespan=lifespan)
+app.include_router(whatsapp_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://127.0.0.1:5173", "http://localhost:5173", "null"],
@@ -75,7 +78,8 @@ app.add_middleware(
 
 @app.middleware("http")
 async def local_api_token(request: Request, call_next):
-    if API_TOKEN and request.method != "OPTIONS" and request.url.path != "/api/health":
+    public_paths = {"/api/health", "/api/integrations/whatsapp/webhook"}
+    if API_TOKEN and request.method != "OPTIONS" and request.url.path not in public_paths:
         supplied = request.headers.get("X-Atelier-Token") or request.query_params.get("api_token")
         if not supplied or not __import__("hmac").compare_digest(supplied, API_TOKEN):
             return Response(content='{"detail":"Yerel API erişimi reddedildi"}', status_code=401,
@@ -144,6 +148,7 @@ def health() -> dict:
             "images": True,
             "ocr": shutil.which("tesseract") is not None,
             "office_conversion": shutil.which("soffice") is not None,
+            "whatsapp": whatsapp_bot.configured(),
         },
     }
 

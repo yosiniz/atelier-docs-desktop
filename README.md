@@ -24,6 +24,7 @@ Atelier Docs; PDF ve görselleri cihazdan çıkarmadan düzenlemek, dönüştür
 - Katmanlı Canvas görsel editörü; metin, dikdörtgen, sıralama, taşıma ve undo/redo
 - İsteğe bağlı yerel Tesseract OCR; kelime koordinatları, güven skoru ve seçilebilir metin katmanı
 - Yerel dosya kaydetme diyaloğu
+- Resmi WhatsApp Business Cloud API webhook'u; dosya ve Türkçe komutla dönüşüm, sonucu aynı sohbete gönderme
 
 Tesseract çalıştırılabiliri bu makinede bulunmadığından OCR düğmesi kurulum gereksinimini açıkça bildirir. Word, Excel ve PowerPoint kurulu Windows sistemlerinde Office → PDF, belgeleri salt okunur açan yerel Microsoft Office motorunu kullanır; Office bulunmayan sistemlerde açıkça sınırlı yerel geri dönüşüm devreye girer.
 
@@ -54,7 +55,7 @@ Windows kurulum paketi:
 npm run dist:win
 ```
 
-`dist:win` en yeni kurulum paketini üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.1.8-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
+`dist:win` en yeni kurulum paketini üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.2.0-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
 
 ## macOS DMG paketleri
 
@@ -70,6 +71,10 @@ npm run dist:mac
 ```
 
 Apple Developer sertifikası ve noterleme bilgileri yapılandırılmadığından mevcut DMG paketleri imzasızdır. İlk açılışta macOS Gatekeeper kullanıcı onayı isteyebilir.
+
+## WhatsApp botu
+
+WhatsApp üzerinden dosya dönüştürme servisi, resmi Meta Cloud API ile çalışır. Kurulum, güvenlik, ortam değişkenleri ve desteklenen komutlar için [WHATSAPP.md](WHATSAPP.md) belgesine bakın.
 
 ## Gizlilik
 
