@@ -1,0 +1,98 @@
+{
+  "name": "atelier-docs-desktop",
+  "version": "0.1.8",
+  "author": "Atelier Docs",
+  "private": true,
+  "type": "module",
+  "description": "Yerel çalışan belge ve görsel düzenleme masaüstü uygulaması",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k -n API,UI,APP -c blue,magenta,green \"npm:dev:api\" \"npm:dev:ui\" \"npm:dev:electron\"",
+    "dev:api": ".venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8765 --reload",
+    "dev:ui": "vite --host 127.0.0.1",
+    "dev:electron": "wait-on http://127.0.0.1:5173 http://127.0.0.1:8765/api/health && electron .",
+    "build": "tsc -b && vite build",
+    "build:backend": ".venv\\Scripts\\pyinstaller.exe --noconfirm --clean --onefile --name atelier-backend --distpath backend-dist --workpath build\\pyinstaller --specpath build backend\\run_server.py",
+    "build:backend:mac": "python3 -m PyInstaller --noconfirm --clean --onefile --name atelier-backend --distpath backend-dist --workpath build/pyinstaller --specpath build backend/run_server.py",
+    "dist:win": "npm run build && npm run build:backend && electron-builder --win nsis && npm run install:latest",
+    "dist:mac": "npm run build && npm run build:backend:mac && electron-builder --mac dmg",
+    "install:latest": "node scripts/install-latest.cjs",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "vitest run",
+    "test:backend": ".venv\\Scripts\\python.exe -m pytest backend/tests -q",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "lucide-react": "latest",
+    "pdfjs-dist": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest",
+    "zustand": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "jsdom": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest",
+    "wait-on": "latest"
+  },
+  "build": {
+    "appId": "com.atelierdocs.desktop",
+    "productName": "Atelier Docs",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-dist",
+        "to": "backend",
+        "filter": [
+          "atelier-backend*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Atelier-Docs-${version}-Setup.${ext}",
+      "icon": "assets/app-icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "Atelier-Docs-${version}-${arch}.${ext}",
+      "icon": "assets/app-icon.png",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "assets/app-icon.ico",
+      "uninstallerIcon": "assets/app-icon.ico"
+    }
+  }
+}
