@@ -15,7 +15,11 @@ SAFE_NAME = re.compile(r"[^\w.\-() ]+", re.UNICODE)
 
 
 def safe_filename(name: str) -> str:
-    clean = SAFE_NAME.sub("_", Path(name).name).strip(" .")
+    # Treat both separators as path boundaries on every host. Path.name only
+    # understands the current OS separator, which left Windows-style paths
+    # partially intact when the backend ran on macOS.
+    basename = re.split(r"[\\/]", name)[-1]
+    clean = SAFE_NAME.sub("_", basename).strip(" .")
     return clean[:160] or "dosya"
 
 
