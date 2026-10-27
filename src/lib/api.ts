@@ -145,9 +145,9 @@ export const addPdfInk = (id: string, payload: unknown) =>
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   })
 
-export const ocrPdf = (id: string, language = 'tur+eng') =>
-  request<{ pdf: PdfInfo; audit: { language: string; word_count: number; average_confidence: number } }>(`/pdf/${id}/ocr`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language, dpi: 200 }),
+export const ocrPdf = (id: string, language = 'tur+eng', force = false) =>
+  request<{ pdf: PdfInfo; audit: { language: string; missing_languages: string[]; word_count: number; average_confidence: number; pages_processed: number; pages_skipped: number } }>(`/pdf/${id}/ocr`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language, dpi: 200, force }),
   })
 
 export const addPdfWatermark = (id: string, payload: unknown) =>
@@ -295,6 +295,16 @@ export async function convertImagesToPdf(files: File[]): Promise<Blob> {
   const form = new FormData()
   files.forEach((file) => form.append('files', file))
   const response = await apiFetch('/convert/images/pdf', { method: 'POST', body: form })
+  if (!response.ok) throw new Error(await errorMessage(response))
+  return response.blob()
+}
+
+export async function convertScansToSearchablePdf(files: File[], language = 'tur+eng'): Promise<Blob> {
+  const form = new FormData()
+  files.forEach((file) => form.append('files', file))
+  form.append('language', language)
+  form.append('dpi', '200')
+  const response = await apiFetch('/ocr/images/pdf', { method: 'POST', body: form })
   if (!response.ok) throw new Error(await errorMessage(response))
   return response.blob()
 }

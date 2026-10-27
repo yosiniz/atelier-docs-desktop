@@ -75,6 +75,13 @@ def inspect_pdf(path: Path) -> dict:
         for index, page in enumerate(document):
             words = page.get_text("words")
             total_words += len(words)
+            page_area = max(1.0, page.rect.width * page.rect.height)
+            image_coverage = sum(
+                max(0.0, rect.width * rect.height) / page_area
+                for image in page.get_images(full=True)
+                for rect in page.get_image_rects(image[0])
+            )
+            scanned_page = len(words) < 4 and image_coverage >= 0.2
             pages.append({
                 "index": index,
                 "number": index + 1,
@@ -82,13 +89,14 @@ def inspect_pdf(path: Path) -> dict:
                 "height": page.rect.height,
                 "rotation": page.rotation,
                 "word_count": len(words),
+                "scanned_likely": scanned_page,
             })
         return {
             "page_count": document.page_count,
             "pages": pages,
             "metadata": metadata,
             "encrypted": bool(document.needs_pass),
-            "scanned_likely": total_words < max(4, document.page_count * 2),
+            "scanned_likely": any(page["scanned_likely"] for page in pages),
         }
 
 

@@ -66,7 +66,9 @@
 
 ## Faz 6/7 — Gelişmiş ve üretim
 
-- [x] İsteğe bağlı yerel Tesseract OCR ve güven göstergesi
+- [x] Taranmış PDF sayfalarını otomatik algılama, yerel Türkçe + İngilizce OCR ve güven göstergesi
+- [x] JPG/PNG/BMP/WebP/çok sayfalı TIFF taramalarından aranabilir OCR PDF oluşturma
+- [x] Windows kurulumuna Tesseract motoru ile `tur+eng` dil paketlerini dahil etme
 - [x] Kalıcı redaksiyon aracı
 - [x] AES-256 şifreli kopya, kilit açma ve metadata araçları
 - [x] Temel DOCX/XLSX/CSV/PPTX editör entegrasyonu

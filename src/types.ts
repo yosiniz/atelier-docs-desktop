@@ -5,6 +5,7 @@ export type PdfPage = {
   height: number
   rotation: number
   word_count: number
+  scanned_likely?: boolean
 }
 
 export type PdfInfo = {

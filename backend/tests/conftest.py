@@ -46,6 +46,25 @@ def sample_png(tmp_path):
 
 
 @pytest.fixture()
+def scanned_document_png(tmp_path):
+    from PIL import Image, ImageDraw, ImageFont
+    path = tmp_path / "taranmis-belge.png"
+    image = Image.new("RGB", (1400, 850), "white")
+    draw = ImageDraw.Draw(image)
+    font_path = "C:/Windows/Fonts/arial.ttf"
+    try:
+        heading = ImageFont.truetype(font_path, 62)
+        body = ImageFont.truetype(font_path, 42)
+    except OSError:
+        heading = body = ImageFont.load_default()
+    draw.text((100, 110), "TARANMIS BELGE", fill="black", font=heading)
+    draw.text((100, 240), "Fatura numarasi 12345", fill="black", font=body)
+    draw.text((100, 320), "Atelier Docs OCR testi", fill="black", font=body)
+    image.save(path, dpi=(200, 200))
+    return path
+
+
+@pytest.fixture()
 def multipage_pdf(tmp_path):
     path = tmp_path / "cok-sayfali.pdf"
     document = fitz.open()

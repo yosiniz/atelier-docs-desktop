@@ -2,11 +2,11 @@ import { ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight, Combine, FileDown, FileImage, FileOutput, FilePenLine, FileSpreadsheet, FileUp, FolderArchive,
-  ImageDown, Images, Layers3, Moon, Scissors, ShieldCheck, Sun, UploadCloud, Zap,
+  ImageDown, Images, Layers3, Moon, ScanText, Scissors, ShieldCheck, Sun, UploadCloud, Zap,
 } from 'lucide-react'
 import { Brand } from '../components/Brand'
 import { Toast } from '../components/Toast'
-import { batchCompressPdfs, batchConvertImages, convertDocxToPdf, convertImagesToPdf, convertPdfToDocx, convertPdfToImages, mergePdfs, saveBlob, upload } from '../lib/api'
+import { batchCompressPdfs, batchConvertImages, convertDocxToPdf, convertImagesToPdf, convertPdfToDocx, convertPdfToImages, convertScansToSearchablePdf, mergePdfs, saveBlob, upload } from '../lib/api'
 import { useAppStore } from '../store'
 
 const tools = [
@@ -20,6 +20,7 @@ const tools = [
   { title: 'Word → PDF', text: 'DOCX içeriğini yerel motorla PDF’e dönüştürün.', icon: FileUp, tone: 'orange', action: 'docx-pdf' },
   { title: 'PDF → JPG', text: 'Her sayfayı yüksek kaliteli JPG olarak ZIP’e aktarın.', icon: ImageDown, tone: 'pink', action: 'pdf-images' },
   { title: 'JPG/PNG → PDF', text: 'Birden çok görseli sıralı PDF sayfalarına dönüştürün.', icon: FileOutput, tone: 'green', action: 'images-pdf' },
+  { title: 'Tarama → OCR PDF', text: 'JPG, PNG veya TIFF taramalarını aranabilir ve düzenlenebilir PDF yapın.', icon: ScanText, tone: 'blue', action: 'scan-ocr' },
   { title: 'Office Araçları', text: 'Word, Excel, CSV ve PowerPoint dosyalarını düzenleyin.', icon: FileSpreadsheet, tone: 'violet', action: 'office' },
   { title: 'Toplu Görsel', text: 'Birden çok görseli tek seferde WebP biçimine dönüştürün.', icon: FolderArchive, tone: 'cyan', action: 'batch-image' },
   { title: 'Toplu PDF Sıkıştır', text: 'Birden çok PDF’i dengeli profille ZIP olarak hazırlayın.', icon: FolderArchive, tone: 'green', action: 'batch-pdf' },
@@ -30,6 +31,7 @@ export function HomePage() {
   const input = useRef<HTMLInputElement>(null)
   const mergeInput = useRef<HTMLInputElement>(null)
   const imagesPdfInput = useRef<HTMLInputElement>(null)
+  const scanOcrInput = useRef<HTMLInputElement>(null)
   const batchImageInput = useRef<HTMLInputElement>(null)
   const batchPdfInput = useRef<HTMLInputElement>(null)
   const [accept, setAccept] = useState('.pdf')
@@ -98,6 +100,19 @@ export function HomePage() {
     } finally { setBusy(false) }
   }
 
+  const scansToOcrPdf = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (!files.length) return
+    setBusy(true)
+    try {
+      await saveBlob(await convertScansToSearchablePdf(files), 'aranabilir-tarama.pdf')
+      setToast({ message: `${files.length} tarama OCR uygulanarak aranabilir PDF'e dönüştürüldü.`, kind: 'success' })
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'OCR PDF oluşturulamadı', kind: 'error' })
+    } finally { setBusy(false) }
+  }
+
   const batchFiles = async (event: ChangeEvent<HTMLInputElement>, kind: 'image' | 'pdf') => {
     const files = Array.from(event.target.files || []); event.target.value = ''
     if (!files.length) return
@@ -140,6 +155,7 @@ export function HomePage() {
             : tool.action === 'docx-pdf' ? pick('docx', 'docx-pdf')
             : tool.action === 'pdf-images' ? pick('pdf', 'pdf-images')
             : tool.action === 'images-pdf' ? imagesPdfInput.current?.click()
+            : tool.action === 'scan-ocr' ? scanOcrInput.current?.click()
             : tool.action === 'batch-image' ? batchImageInput.current?.click()
             : tool.action === 'batch-pdf' ? batchPdfInput.current?.click()
             : pick(tool.action as 'pdf' | 'image' | 'office')}>
@@ -152,6 +168,7 @@ export function HomePage() {
     <input ref={input} className="visually-hidden" type="file" accept={accept} onChange={openFile} />
     <input ref={mergeInput} className="visually-hidden" type="file" accept=".pdf" multiple onChange={merge} />
     <input ref={imagesPdfInput} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff" multiple onChange={imagesToPdf} />
+    <input ref={scanOcrInput} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff" multiple onChange={scansToOcrPdf} />
     <input ref={batchImageInput} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff" multiple onChange={(event) => batchFiles(event, 'image')} />
     <input ref={batchPdfInput} className="visually-hidden" type="file" accept=".pdf" multiple onChange={(event) => batchFiles(event, 'pdf')} />
     {toast && <Toast {...toast} onClose={() => setToast(null)} />}

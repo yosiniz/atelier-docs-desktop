@@ -47,10 +47,17 @@ async function startPackagedBackend() {
   if (!fs.existsSync(executable)) {
     throw new Error(`Yerel belge motoru bulunamadı: ${executableName}`)
   }
+  const ocrExecutable = path.join(process.resourcesPath, 'ocr', 'windows', 'tesseract.exe')
+  const tessdata = path.join(process.resourcesPath, 'ocr', 'windows', 'tessdata')
+  const backendEnv = { ...process.env, ATELIER_PORT: String(apiPort), ATELIER_API_TOKEN: apiToken }
+  if (process.platform === 'win32' && fs.existsSync(ocrExecutable)) {
+    backendEnv.ATELIER_TESSERACT_CMD = ocrExecutable
+    backendEnv.TESSDATA_PREFIX = tessdata
+  }
   backendProcess = spawn(executable, [], {
     windowsHide: true,
     stdio: 'ignore',
-    env: { ...process.env, ATELIER_PORT: String(apiPort), ATELIER_API_TOKEN: apiToken },
+    env: backendEnv,
   })
   backendProcess.on('exit', () => { backendProcess = null })
   await waitForBackend(apiPort, apiToken)

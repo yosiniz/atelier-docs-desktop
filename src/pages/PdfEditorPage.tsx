@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowDown, ArrowLeft, ArrowUp, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Crop, Download, FileCog, FileSpreadsheet, FileText, ListOrdered, LoaderCircle, Presentation,
   FileDown, Images, LockKeyhole, Maximize2, Minus, PanelLeftClose, Plus, RotateCw, Save, Scissors, Search, Settings2,
-  History, ImagePlus, Link2, MousePointer2, PenLine, Redo2, ShieldX, Shrink, Signature, Stamp, Square, Trash2, Type, Undo2, UnlockKeyhole, X,
+  History, ImagePlus, Link2, MousePointer2, PenLine, Redo2, ScanText, ShieldX, Shrink, Signature, Stamp, Square, Trash2, Type, Undo2, UnlockKeyhole, X,
 } from 'lucide-react'
 import { Brand } from '../components/Brand'
 import { Toast } from '../components/Toast'
@@ -260,7 +260,7 @@ export function PdfEditorPage() {
   const openHistory = () => document && run(async () => { setHistoryItems((await getDocumentHistory(document.id)).reverse()); setHistoryOpen(true) })
   const applyOcr = () => document && run(async () => {
     const result = await ocrPdf(document.id); document.pdf = result.pdf; setCacheKey((value) => value + 1)
-    setToast({ message: `OCR tamamlandı: ${result.audit.word_count} sözcük, ortalama güven %${result.audit.average_confidence}.`, kind: 'success' })
+    setToast({ message: `OCR tamamlandı: ${result.audit.pages_processed} sayfa, ${result.audit.word_count} sözcük, ortalama güven %${result.audit.average_confidence}.`, kind: 'success' })
   })
   const applyWatermark = () => document && run(async () => { document.pdf = await addPdfWatermark(document.id, { text: watermarkText, font_size: 42, color: '#9ca3af', opacity: .25, rotation: 0 }); setWatermarkOpen(false); setCacheKey((value) => value + 1); setToast({ message: 'Kaldırılabilir filigran eklendi.', kind: 'success' }) })
   const removeWatermark = () => document && run(async () => { document.pdf = await removePdfWatermarks(document.id); setWatermarkOpen(false); setCacheKey((value) => value + 1); setToast({ message: 'Atelier filigranları kaldırıldı.', kind: 'success' }) })
@@ -557,6 +557,7 @@ export function PdfEditorPage() {
         <button className={`tool-button danger ${mode === 'redact' ? 'active' : ''}`} onClick={() => chooseMode('redact')}><ShieldX size={17} /> Redaksiyon</button>
         <button className={`tool-button ${mode === 'crop' ? 'active' : ''}`} onClick={() => chooseMode('crop')}><Crop size={17} /> Kırp</button>
         <button className="tool-button" onClick={() => { setSearchOpen(true); setMatchCount(null) }} disabled={busy}><Search size={17} /> Bul / Değiştir</button>
+        <button className="tool-button" onClick={applyOcr} disabled={busy} title="Taranmış sayfalara Türkçe + İngilizce metin katmanı ekle"><ScanText size={17} /> OCR</button>
         <button className="tool-button" onClick={undo} disabled={busy}><Undo2 size={17} /> Geri al</button>
         <button className="tool-button" onClick={redo} disabled={busy}><Redo2 size={17} /> İleri al</button>
         <button className="tool-button" onClick={rotate}><RotateCw size={17} /> Döndür</button>
@@ -578,7 +579,7 @@ export function PdfEditorPage() {
       </aside>
 
       <section className="canvas-area">
-        {pdf.scanned_likely && <div className="scan-warning"><Search size={16} /><span>Bu belge taranmış olabilir. Türkçe + İngilizce OCR ile seçilebilir metin katmanı oluşturabilirsiniz.</span><button onClick={applyOcr} disabled={busy}>OCR uygula</button></div>}
+        {pdf.scanned_likely && <div className="scan-warning"><ScanText size={16} /><span>{pdf.pages.filter((item) => item.scanned_likely).length} taranmış sayfa algılandı. OCR sonrası metinleri seçebilir, arayabilir ve düzenleyebilirsiniz.</span><button onClick={applyOcr} disabled={busy}>OCR uygula</button></div>}
         <div ref={pageElementRef} className={`pdf-page mode-${mode}`} style={viewport} onPointerDown={startArea} onPointerMove={updateArea} onPointerUp={finishArea}>
           <img src={renderUrl(document.id, page, cacheKey)} alt={`${page + 1}. sayfa`} style={viewport} />
           {pageImages.map((image) => { const box = selectedImage?.id === image.id && editRect ? editRect : image.bbox; return <button key={image.id} aria-label={`Görseli taşı: ${image.pixel_width} × ${image.pixel_height}`}

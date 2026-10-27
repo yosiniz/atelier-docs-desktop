@@ -147,6 +147,7 @@ class OfficeSaveRequest(BaseModel):
 class OcrRequest(BaseModel):
     language: str = Field(default="tur+eng", pattern=r"^[a-z]{3}(\+[a-z]{3})*$")
     dpi: int = Field(default=200, ge=120, le=300)
+    force: bool = False
 
 
 class WatermarkRequest(BaseModel):

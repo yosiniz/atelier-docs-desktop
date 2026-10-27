@@ -1,6 +1,6 @@
 {
   "name": "atelier-docs-desktop",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Atelier Docs",
   "private": true,
   "type": "module",
@@ -14,7 +14,8 @@
     "build": "tsc -b && vite build",
     "build:backend": ".venv\\Scripts\\pyinstaller.exe --noconfirm --clean --onefile --name atelier-backend --distpath backend-dist --workpath build\\pyinstaller --specpath build backend\\run_server.py",
     "build:backend:mac": "python3 -m PyInstaller --noconfirm --clean --onefile --name atelier-backend --distpath backend-dist --workpath build/pyinstaller --specpath build backend/run_server.py",
-    "dist:win": "npm run build && npm run build:backend && electron-builder --win nsis && npm run install:latest",
+    "prepare:ocr:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_ocr_runtime.ps1",
+    "dist:win": "npm run build && npm run build:backend && npm run prepare:ocr:win && electron-builder --win nsis && npm run install:latest",
     "dist:mac": "npm run build && npm run build:backend:mac && electron-builder --mac dmg",
     "install:latest": "node scripts/install-latest.cjs",
     "test": "npm run test:frontend && npm run test:backend",
@@ -64,6 +65,13 @@
         "to": "backend",
         "filter": [
           "atelier-backend*"
+        ]
+      },
+      {
+        "from": "ocr-runtime",
+        "to": "ocr",
+        "filter": [
+          "**/*"
         ]
       }
     ],

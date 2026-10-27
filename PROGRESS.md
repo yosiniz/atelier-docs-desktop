@@ -1,5 +1,17 @@
 # İlerleme
 
+## 26 Ekim 2026
+
+- 0.3.0 OCR: Taranmış PDF sayfaları görsel kapsama ve metin katmanına göre algılanıyor; yalnızca gerekli sayfalara Türkçe + İngilizce, koordinatlı ve güven skorlu görünmez metin katmanı ekleniyor.
+- JPG/PNG/BMP/WebP ve çok sayfalı TIFF taramalarını görüntüyü koruyarak aranabilir PDF'e dönüştüren yeni ana sayfa aracı ve API eklendi.
+- Tesseract motoru Windows EXE paketine `tur`, `eng` ve `osd` dil verileriyle birlikte ekleniyor; Türkçe karakterli Windows profil yolları için ASCII OCR dil önbelleği kullanılıyor.
+
+## 27 Ekim 2026
+
+- Windows kullanıcı adındaki Türkçe karakterlerin Tesseract geçici dosya yolunda `utf-8 decode` hatası oluşturması giderildi; OCR girdi ve dil önbelleği `C:\ProgramData\AtelierDocs\OCR` altındaki ASCII yola alındı.
+- Sessiz yükseltme öncesinde yalnızca Atelier Docs ve kendi backend süreçleri sonlandırılıyor; eski backend'in bellekte kalıp yeni arayüze hizmet vermesi engellendi.
+- 4 frontend ve 49 backend testi geçti. Paketlenmiş OCR motoru gerçek tarama ile %95,1 ortalama güvenle doğrulandı; kurulu uygulamanın sağlık yanıtı `available: true`, `turkish: true`, diller `eng, osd, tur` olarak kontrol edildi.
+
 ## 23 Ekim 2026
 
 - 0.2.1 macOS dağıtımı: DMG içeriği ad-hoc imzaya geçirildi; minimum macOS 12 belirtildi; Apple Silicon ve Intel işlerinde DMG bağlama, derin kod imzası kontrolü, yerel backend varlık/mimari kontrolü ve paketlenmiş uygulama smoke testi yayın kapısı yapıldı.

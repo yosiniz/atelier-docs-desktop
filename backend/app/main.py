@@ -22,7 +22,7 @@ from .models import (
 from .services.image_service import compress_to_target, convert_image, edit_image
 from .services.conversion_service import docx_to_pdf, images_to_pdf, pdf_to_docx, pdf_to_images, pdf_to_pptx, pdf_to_xlsx
 from .services.office_service import inspect_office, presentation_to_pdf, save_office, spreadsheet_to_pdf
-from .services.ocr_service import ocr_pdf
+from .services.ocr_service import ocr_engine_status, ocr_images_to_pdf, ocr_pdf
 from .jobs import jobs
 from .services.pdf_service import (
     compress_pdf,
@@ -65,7 +65,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title=APP_NAME, version="0.2.0", docs_url="/api/docs", lifespan=lifespan)
+app = FastAPI(title=APP_NAME, version="0.3.0", docs_url="/api/docs", lifespan=lifespan)
 app.include_router(whatsapp_router)
 app.add_middleware(
     CORSMiddleware,
@@ -146,7 +146,7 @@ def health() -> dict:
         "capabilities": {
             "pdf": True,
             "images": True,
-            "ocr": shutil.which("tesseract") is not None,
+            "ocr": ocr_engine_status(),
             "office_conversion": shutil.which("soffice") is not None,
             "whatsapp": whatsapp_bot.configured(),
         },
@@ -410,7 +410,7 @@ def pdf_ocr(document_id: str, request: OcrRequest) -> dict:
     staged = folder / "ocr.next.pdf"
     current = folder / "current.pdf"
     try:
-        audit = ocr_pdf(source, staged, request.language, request.dpi)
+        audit = ocr_pdf(source, staged, request.language, request.dpi, request.force)
         result = inspect_pdf(staged)
         snapshot_revision(document_id)
         staged.replace(current)
@@ -845,5 +845,38 @@ async def convert_images_pdf(files: list[UploadFile] = File(...)) -> FileRespons
         output = saved[0].parent / "images.pdf"
         images_to_pdf(saved, output)
         return FileResponse(output, media_type="application/pdf", filename="gorseller.pdf")
+    except ValueError as exc:
+        raise fail(400, str(exc)) from exc
+
+
+@app.post("/api/ocr/images/pdf")
+async def convert_scans_to_searchable_pdf(
+    files: list[UploadFile] = File(...),
+    language: str = Form(default="tur+eng", pattern=r"^[a-z]{3}(\+[a-z]{3})*$"),
+    dpi: int = Form(default=200, ge=120, le=300),
+) -> FileResponse:
+    """Turn scanner images (including multi-page TIFF) into a searchable local PDF."""
+    if not files:
+        raise fail(400, "En az bir tarama görseli seçin")
+    saved: list[Path] = []
+    try:
+        for upload in files:
+            _id, path, _name, _size = await save_upload(upload)
+            if verify_file(path) != "image":
+                raise fail(422, "Yalnızca desteklenen tarama görselleri kabul edilir")
+            saved.append(path)
+        output = saved[0].parent / "ocr-searchable.pdf"
+        audit = ocr_images_to_pdf(saved, output, language, dpi)
+        return FileResponse(
+            output,
+            media_type="application/pdf",
+            filename="aranabilir-tarama.pdf",
+            headers={
+                "X-Atelier-OCR-Words": str(audit["word_count"]),
+                "X-Atelier-OCR-Confidence": str(audit["average_confidence"]),
+            },
+        )
+    except RuntimeError as exc:
+        raise fail(503, str(exc)) from exc
     except ValueError as exc:
         raise fail(400, str(exc)) from exc

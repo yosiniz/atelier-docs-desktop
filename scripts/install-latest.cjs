@@ -34,6 +34,12 @@ if (!installers.length) throw new Error('Kurulacak Atelier Docs paketi bulunamad
 const latest = installers.at(-1)
 const installer = join(releaseDir, latest.name)
 
+// Running Electron and sidecar processes keep the old binaries mapped and can
+// survive a silent NSIS uninstall. Stop only Atelier Docs-owned processes so
+// the next launch cannot reconnect to the previous backend in memory.
+spawnSync('taskkill.exe', ['/IM', 'Atelier Docs.exe', '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
+spawnSync('taskkill.exe', ['/IM', 'atelier-backend.exe', '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
+
 // Aynı kullanıcıdaki eski kurulum resmi NSIS kaldırıcıyla temizlenir.
 const userUninstaller = join(userInstall, 'Uninstall Atelier Docs.exe')
 if (existsSync(userUninstaller)) run(userUninstaller, ['/S'], 'Eski kullanıcı kurulumu kaldırılamadı')

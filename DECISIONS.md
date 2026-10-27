@@ -37,7 +37,7 @@
 
 ## ADR-008 — OCR yalnızca yerel ve isteğe bağlı
 
-**Karar:** OCR, kuruluysa yerel Tesseract ile çalışacak; dosya harici bir servise gönderilmeyecek.  
+**Karar:** OCR dosyayı harici servise göndermeden yerel Tesseract ile çalışacak. Windows kurulumuna motor ile Türkçe/İngilizce dil verileri gömülecek; mevcut metinli sayfalar varsayılan olarak atlanacak.
 **Gerekçe:** Hassas belge gizliliğini korumak. Dil paketi veya çalıştırılabilir yoksa kullanıcıya açık hata verilmesi sessiz ve düşük kaliteli sonuç üretmekten daha güvenlidir.
 
 ## ADR-009 — Yerel Canvas katman modeli

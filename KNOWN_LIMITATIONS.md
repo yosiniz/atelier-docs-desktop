@@ -2,7 +2,7 @@
 
 - PDF bir akış belgesi değildir; mevcut metin değişikliği seçilen metin alanını kalıcı redaksiyonla kaldırıp yeniden oluşturarak yapılır. Paragrafın geri kalanını Word gibi otomatik akıtmaz.
 - Karmaşık Type3/font-alt-kümesi metinleri, eğri üzerindeki metin, dikey yazı ve bazı Form XObject içerikleri henüz düzenlenemez.
-- Taranmış PDF algılanır ve yerel Tesseract varsa OCR uygulanır. Dağıtım ortamında Tesseract çalıştırılabiliri yoksa işlem açık bir kurulum hatası verir; OCR sonucu kullanıcı kontrolü gerektirir.
+- Taranmış PDF sayfaları algılanır; Windows kurulumuyla gelen yerel Tesseract ve Türkçe/İngilizce dil verileriyle OCR uygulanır. OCR metni seçilebilir ve editörde düzenlenebilir; düşük kaliteli/eğri taramalarda sonuç kullanıcı kontrolü gerektirir.
 - Office → PDF dönüşümü Microsoft Word/Excel/PowerPoint kurulu Windows sistemlerinde uygulamanın kendi PDF motorunu kullanır. Office bulunmazsa yerel metin/tablo/slayt geri dönüşümü devreye girer ve karmaşık stiller birebir korunmayabilir. Animasyonlar ile makrolar PDF çıktısında çalışmaz; kaynak dosya salt okunur açılır ve makrolar kapatılır.
 - Dengeli ve küçük PDF sıkıştırma profilleri uygun gömülü görselleri yeniden örnekler. Zaten optimize edilmiş, vektör ağırlıklı veya alfa kanallı belgeler küçülmeyebilir.
 - Şifreli PDF kopyası, metadata ve URI bağlantısı ekleme desteklenir; sertifika tabanlı dijital imza, mevcut bağlantı silme/düzenleme, PDF katmanları ve form alanı düzenleme henüz yoktur.
@@ -18,7 +18,7 @@
 
 - macOS DMG paketleri Apple Silicon ve Intel için ayrı üretilir.
 - DMG paketleri ad-hoc imzalıdır ve CI içinde DMG içinden başlatılarak sınanır. Apple Developer sertifikası ve noterleme kimlik bilgileri sağlanmadığı için Gatekeeper ilk açılışta yine kullanıcı onayı isteyebilir; uyarısız çift tıklama deneyimi ancak Developer ID imzası ve Apple noterlemesiyle sağlanabilir.
-- LibreOffice ve Tesseract gibi harici araçlara bağlı işlevler, bu araçlar Mac üzerinde ayrıca kurulu değilse yerel geri dönüş yöntemlerini kullanır veya kullanılamaz olarak gösterilir.
+- LibreOffice gibi harici araçlara bağlı işlevler ayrı kurulum gerektirir. macOS DMG henüz Tesseract ikililerini gömmez; OCR için `brew install tesseract tesseract-lang` gerekir.
 
 # WhatsApp entegrasyonu
 

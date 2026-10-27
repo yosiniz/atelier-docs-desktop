@@ -710,17 +710,51 @@ def test_freehand_ink_is_written_as_pdf_vector_content(client, sample_pdf):
         assert any(drawing.get("color") is not None for drawing in output[0].get_drawings())
 
 
-def test_ocr_reports_missing_local_engine_without_modifying_document(client, sample_pdf):
-    import shutil
-    if shutil.which("tesseract"):
-        return
+def test_ocr_reports_missing_local_engine_without_modifying_document(client, sample_pdf, monkeypatch):
+    import backend.app.services.ocr_service as ocr_module
+    monkeypatch.setattr(ocr_module, "find_tesseract", lambda: None)
     uploaded = upload_pdf(client, sample_pdf)
     response = client.post(f"/api/pdf/{uploaded['id']}/ocr", json={"language": "tur+eng", "dpi": 150})
     assert response.status_code == 503
-    assert "Tesseract" in response.json()["detail"]
+    assert "OCR motoru" in response.json()["detail"]
     content = client.get(f"/api/files/{uploaded['id']}/download").content
     with fitz.open(stream=content, filetype="pdf") as output:
         assert "Eski metin 12345" in output[0].get_text()
+
+
+def test_scanned_image_becomes_searchable_pdf(client, scanned_document_png):
+    with scanned_document_png.open("rb") as handle:
+        response = client.post(
+            "/api/ocr/images/pdf",
+            files=[("files", (scanned_document_png.name, handle, "image/png"))],
+            data={"language": "tur+eng", "dpi": "200"},
+        )
+    assert response.status_code == 200, response.text
+    assert response.content.startswith(b"%PDF")
+    with fitz.open(stream=response.content, filetype="pdf") as output:
+        assert output.page_count == 1
+        text = output[0].get_text().casefold()
+        assert "12345" in text
+        assert "atelier" in text
+        assert output[0].get_images()
+
+
+def test_scanned_pdf_is_detected_and_ocr_layer_persists(client, scanned_document_png, tmp_path):
+    scanned_pdf = tmp_path / "tarama.pdf"
+    document = fitz.open()
+    page = document.new_page(width=504, height=306)
+    page.insert_image(page.rect, filename=str(scanned_document_png))
+    document.save(scanned_pdf)
+    document.close()
+    uploaded = upload_pdf(client, scanned_pdf)
+    assert uploaded["pdf"]["scanned_likely"] is True
+    assert uploaded["pdf"]["pages"][0]["scanned_likely"] is True
+    response = client.post(f"/api/pdf/{uploaded['id']}/ocr", json={"language": "tur+eng", "dpi": 200})
+    assert response.status_code == 200, response.text
+    assert response.json()["data"]["audit"]["pages_processed"] == 1
+    content = client.get(f"/api/files/{uploaded['id']}/download").content
+    with fitz.open(stream=content, filetype="pdf") as output:
+        assert "12345" in output[0].get_text()
 
 
 def test_removable_watermark_and_clickable_link(client, sample_pdf):

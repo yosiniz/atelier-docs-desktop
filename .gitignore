@@ -4,6 +4,7 @@ dist/
 build/
 release/
 backend-dist/
+ocr-runtime/windows/
 *.tsbuildinfo
 __pycache__/
 *.py[cod]
@@ -16,5 +17,6 @@ Thumbs.db
 .env
 workspace-data/
 tmp/
+output/
 vite.config.js
 vite.config.d.ts
