@@ -76,3 +76,7 @@
 - **Gerekçe:** Webhook imzası, medya kimlikleri, kurallı gönderim akışı ve hesap uyumluluğu resmi API ile sürdürülebilir biçimde yönetilebilir.
 - **Sonuç:** Masaüstü dönüşüm motoru yeniden kullanılır. Canlı bağlantı yalnızca ortam değişkenlerinden alınan Meta kimlik bilgileriyle etkinleşir; gizli bilgiler repoya girmez.
 
+## ADR-016 — Tarama görünümünü koruyan OCR iyileştirmeleri
+
+OpenCV yalnızca OCR girdisinde gölge/kontrast düzeltme, küçük açı düzeltme ve form çizgisi ayıklama için kullanılır. Ters koordinat dönüşümü kelime kutularını asıl sayfaya yerleştirir. Düşük güvenli sonuçlar kullanıcının kontrolüne sunulur; el yazısı için doğruluk iddiası yapılmaz. Eski OCR yeniden tanımada kaldırılır; tarama metninin düzenlenmesi görüntü piksellerine de redaksiyon uygular.
+

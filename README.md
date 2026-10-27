@@ -29,6 +29,12 @@ Atelier Docs; PDF ve görselleri cihazdan çıkarmadan düzenlemek, dönüştür
 
 Windows kurulum paketi Tesseract OCR motorunu ve `tur+eng` dil verilerini içerir; ayrı kurulum gerekmez. Geliştirme ortamında `winget install UB-Mannheim.TesseractOCR` kullanılabilir. macOS'ta OCR için `brew install tesseract tesseract-lang` gerekir. Word, Excel ve PowerPoint kurulu Windows sistemlerinde Office → PDF, belgeleri salt okunur açan yerel Microsoft Office motorunu kullanır; Office bulunmayan sistemlerde açıkça sınırlı yerel geri dönüşüm devreye girer.
 
+### Gelişmiş OCR (0.3.1)
+
+PDF editöründeki **OCR** düğmesinden dil, 200/300/400 DPI, belge türü ve sayfa kapsamı seçilir. Formlar ve faturalar için **Tablo / Form / Fatura** kullanın. Soluk tarama iyileştirme ve küçük açı düzeltme yalnızca tanıma görüntüsüne uygulanır; PDF'nin orijinal görünümü korunur. İşlem arka planda ilerleme ve iptal desteğiyle çalışır. Eski OCR sonuçları **Eski OCR katmanını yeniden tanı** seçeneğiyle yinelenmeden değiştirilebilir.
+
+Tanıma sonrası sözcüklerin güven değerleri kaydedilir; düşük güvenli sözcükler sarı kesikli kutuyla gösterilebilir. Seçilen OCR sözcüğünü değiştirmek/silmek hem görünmez metin katmanını hem de alttaki eski tarama piksellerini kalıcı kaldırır. OCR güveni doğruluk garantisi değildir; özellikle el yazısı ve tutarları kontrol edin.
+
 ## Geliştirme kurulumu (Windows / PowerShell)
 
 ```powershell
@@ -56,7 +62,7 @@ Windows kurulum paketi:
 npm run dist:win
 ```
 
-`dist:win` en yeni kurulum paketini ve içine gömülü OCR motorunu üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.3.0-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
+`dist:win` en yeni kurulum paketini ve içine gömülü OCR motorunu üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.3.1-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
 
 ## macOS DMG paketleri
 

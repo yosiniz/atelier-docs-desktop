@@ -65,7 +65,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title=APP_NAME, version="0.3.0", docs_url="/api/docs", lifespan=lifespan)
+app = FastAPI(title=APP_NAME, version="0.3.1", docs_url="/api/docs", lifespan=lifespan)
 app.include_router(whatsapp_router)
 app.add_middleware(
     CORSMiddleware,
@@ -410,7 +410,8 @@ def pdf_ocr(document_id: str, request: OcrRequest) -> dict:
     staged = folder / "ocr.next.pdf"
     current = folder / "current.pdf"
     try:
-        audit = ocr_pdf(source, staged, request.language, request.dpi, request.force)
+        audit = ocr_pdf(source, staged, request.language, request.dpi, request.force,
+                        layout=request.layout, enhance=request.enhance, deskew=request.deskew, pages=request.pages)
         result = inspect_pdf(staged)
         snapshot_revision(document_id)
         staged.replace(current)
@@ -422,6 +423,30 @@ def pdf_ocr(document_id: str, request: OcrRequest) -> dict:
     except (ValueError, IndexError) as exc:
         staged.unlink(missing_ok=True)
         raise fail(400, str(exc)) from exc
+
+
+@app.post("/api/jobs/pdf/{document_id}/ocr")
+def queue_pdf_ocr(document_id: str, request: OcrRequest) -> dict:
+    source = get_path(document_id)
+    folder = document_dir(document_id)
+    staged = folder / f"ocr-{__import__('uuid').uuid4().hex}.pdf"
+
+    def work(cancel_event, progress):
+        try:
+            audit = ocr_pdf(source, staged, request.language, request.dpi, request.force,
+                            layout=request.layout, enhance=request.enhance, deskew=request.deskew,
+                            pages=request.pages, progress=progress, cancel_event=cancel_event)
+            if cancel_event.is_set():
+                return {}
+            result = inspect_pdf(staged)
+            snapshot_revision(document_id)
+            staged.replace(folder / "current.pdf")
+            record_operation(document_id, "Gelişmiş OCR", {"language": audit["language"], "words": audit["word_count"]})
+            return {"pdf": result, "audit": audit}
+        finally:
+            staged.unlink(missing_ok=True)
+
+    return {"ok": True, "data": jobs.submit("pdf-ocr", document_id, work)}
 
 
 @app.post("/api/pdf/{document_id}/content/watermark")

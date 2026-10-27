@@ -12,6 +12,7 @@ import { addBlankPdfPage, addPdfImage, addPdfInk, addPdfLink, addPdfShape, addPd
 import { translateRectWithinPage, type Rect } from '../lib/geometry'
 import { useAppStore } from '../store'
 import type { TextBlock } from '../types'
+import type { OcrOptions, OcrAudit } from '../lib/api'
 
 type TextAlignment = 'left' | 'center' | 'right' | 'justify'
 type TextStyleClipboard = {
@@ -46,6 +47,11 @@ export function PdfEditorPage() {
   const [editRect, setEditRect] = useState<[number, number, number, number] | null>(null)
   const [cacheKey, setCacheKey] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [ocrOpen, setOcrOpen] = useState(false)
+  const [ocrAudit, setOcrAudit] = useState<OcrAudit | null>(null)
+  const [ocrScope, setOcrScope] = useState<'all' | 'current'>('all')
+  const [showUncertain, setShowUncertain] = useState(false)
+  const [ocrOptions, setOcrOptions] = useState<OcrOptions>({ language: 'tur+eng', dpi: 300, layout: 'auto', enhance: true, deskew: true, force: false })
   const [activeJob, setActiveJob] = useState<{ id: string; progress: number } | null>(null)
   const [splitSpec, setSplitSpec] = useState('1')
   const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' } | null>(null)
@@ -259,8 +265,13 @@ export function PdfEditorPage() {
   })
   const openHistory = () => document && run(async () => { setHistoryItems((await getDocumentHistory(document.id)).reverse()); setHistoryOpen(true) })
   const applyOcr = () => document && run(async () => {
-    const result = await ocrPdf(document.id); document.pdf = result.pdf; setCacheKey((value) => value + 1)
-    setToast({ message: `OCR tamamlandı: ${result.audit.pages_processed} sayfa, ${result.audit.word_count} sözcük, ortalama güven %${result.audit.average_confidence}.`, kind: 'success' })
+    setOcrOpen(false)
+    try {
+      const result = await ocrPdf(document.id, { ...ocrOptions, pages: ocrScope === 'current' ? [page] : undefined }, setActiveJob)
+      document.pdf = result.pdf; setCacheKey((value) => value + 1)
+      setOcrAudit(result.audit); setShowUncertain(true); setSelected(null)
+      setToast({ message: result.audit.word_count ? `OCR: ${result.audit.word_count} sözcük. ${result.audit.low_confidence_words} sözcüğü kontrol edin.` : 'Metin tanınamadı. Farklı belge türü veya daha net tarama deneyin.', kind: result.audit.word_count ? 'success' : 'error' })
+    } finally { setActiveJob(null) }
   })
   const applyWatermark = () => document && run(async () => { document.pdf = await addPdfWatermark(document.id, { text: watermarkText, font_size: 42, color: '#9ca3af', opacity: .25, rotation: 0 }); setWatermarkOpen(false); setCacheKey((value) => value + 1); setToast({ message: 'Kaldırılabilir filigran eklendi.', kind: 'success' }) })
   const removeWatermark = () => document && run(async () => { document.pdf = await removePdfWatermarks(document.id); setWatermarkOpen(false); setCacheKey((value) => value + 1); setToast({ message: 'Atelier filigranları kaldırıldı.', kind: 'success' }) })
@@ -557,7 +568,7 @@ export function PdfEditorPage() {
         <button className={`tool-button danger ${mode === 'redact' ? 'active' : ''}`} onClick={() => chooseMode('redact')}><ShieldX size={17} /> Redaksiyon</button>
         <button className={`tool-button ${mode === 'crop' ? 'active' : ''}`} onClick={() => chooseMode('crop')}><Crop size={17} /> Kırp</button>
         <button className="tool-button" onClick={() => { setSearchOpen(true); setMatchCount(null) }} disabled={busy}><Search size={17} /> Bul / Değiştir</button>
-        <button className="tool-button" onClick={applyOcr} disabled={busy} title="Taranmış sayfalara Türkçe + İngilizce metin katmanı ekle"><ScanText size={17} /> OCR</button>
+        <button className="tool-button" onClick={() => setOcrOpen(true)} disabled={busy} title="Tarama kalitesini ve metin tanıma ayarlarını seç"><ScanText size={17} /> OCR</button>
         <button className="tool-button" onClick={undo} disabled={busy}><Undo2 size={17} /> Geri al</button>
         <button className="tool-button" onClick={redo} disabled={busy}><Redo2 size={17} /> İleri al</button>
         <button className="tool-button" onClick={rotate}><RotateCw size={17} /> Döndür</button>
@@ -579,7 +590,8 @@ export function PdfEditorPage() {
       </aside>
 
       <section className="canvas-area">
-        {pdf.scanned_likely && <div className="scan-warning"><ScanText size={16} /><span>{pdf.pages.filter((item) => item.scanned_likely).length} taranmış sayfa algılandı. OCR sonrası metinleri seçebilir, arayabilir ve düzenleyebilirsiniz.</span><button onClick={applyOcr} disabled={busy}>OCR uygula</button></div>}
+        {pdf.scanned_likely && <div className="scan-warning"><ScanText size={16} /><span>Taranmış sayfalar var. Metni tanımak ve düzenlemek için OCR uygulayın.</span><button onClick={() => setOcrOpen(true)} disabled={busy}>OCR uygula</button></div>}
+        {ocrAudit && <div className="ocr-summary" role="status"><ScanText size={16} /><span>{ocrAudit.pages_processed} sayfa · {ocrAudit.word_count} sözcük · Güven %{ocrAudit.average_confidence} · Kontrol gereken: {ocrAudit.low_confidence_words}</span><label><input type="checkbox" checked={showUncertain} onChange={(event) => setShowUncertain(event.target.checked)} /> Şüpheli sözcükleri işaretle</label><button onClick={() => setOcrOpen(true)}>Sonuç / Ayarlar</button></div>}
         <div ref={pageElementRef} className={`pdf-page mode-${mode}`} style={viewport} onPointerDown={startArea} onPointerMove={updateArea} onPointerUp={finishArea}>
           <img src={renderUrl(document.id, page, cacheKey)} alt={`${page + 1}. sayfa`} style={viewport} />
           {pageImages.map((image) => { const box = selectedImage?.id === image.id && editRect ? editRect : image.bbox; return <button key={image.id} aria-label={`Görseli taşı: ${image.pixel_width} × ${image.pixel_height}`}
@@ -588,7 +600,8 @@ export function PdfEditorPage() {
             style={{ left: box[0] * zoom, top: box[1] * zoom, width: (box[2] - box[0]) * zoom, height: (box[3] - box[1]) * zoom }} /> })}
           {blocks.map((block) => { const box = selected?.id === block.id && editRect ? editRect : block.bbox; return <button key={block.id} aria-label={`Metni düzenle: ${block.text.slice(0, 30)}`}
             onClick={() => clickTextBlock(block)} onPointerDown={(event) => startTextDrag(event, block)} onPointerMove={updateTextDrag} onPointerUp={finishTextDrag} onPointerCancel={cancelTextDrag}
-            className={`text-hitbox ${selected?.id === block.id ? 'selected' : ''} ${draggingTextId === block.id ? 'dragging' : ''}`}
+            title={block.is_ocr ? `OCR · Güven ${block.confidence == null ? 'bilinmiyor' : '%' + Math.round(block.confidence)} · Düzenlemek için tıklayın` : undefined}
+            className={`text-hitbox ${selected?.id === block.id ? 'selected' : ''} ${draggingTextId === block.id ? 'dragging' : ''} ${showUncertain && block.is_ocr && block.confidence != null && block.confidence < 65 ? 'ocr-uncertain' : ''}`}
             style={{ left: box[0] * zoom, top: box[1] * zoom, width: (box[2] - box[0]) * zoom, height: (box[3] - box[1]) * zoom }} /> })}
           {draftRect && <div className={`draft-area ${mode}`} style={{ left: draftRect[0] * zoom, top: draftRect[1] * zoom, width: (draftRect[2] - draftRect[0]) * zoom, height: (draftRect[3] - draftRect[1]) * zoom }} />}
           {inkPath.length > 1 && <svg className="ink-preview" width={viewport.width} height={viewport.height}><polyline points={inkPath.map(([x, y]) => `${x * zoom},${y * zoom}`).join(' ')} fill="none" stroke={color} strokeWidth={2 * zoom} strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -599,6 +612,7 @@ export function PdfEditorPage() {
         <div className="panel-heading"><span>Özellikler</span><Settings2 size={16} /></div>
         {selected && mode === 'edit' ? <div className="properties-form">
           <div className="selected-label"><Type size={16} /><span>Metin bloğu</span></div>
+          {selected.is_ocr && <div className="security-note"><ScanText size={16} /><span>OCR metni · Güven {selected.confidence == null ? 'bilinmiyor' : '%' + Math.round(selected.confidence)}. Yazıyı kontrol edin. Değişiklikte eski tarama pikselleri de silinir.</span></div>}
           <label>Metin<textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} /></label>
           <div className="form-row"><label>Boyut<input type="number" min="4" max="144" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><label>Renk<input type="color" value={color} onChange={(event) => setColor(event.target.value)} /></label></div>
           <div className="text-style-controls"><button className={bold ? 'active' : ''} onClick={() => setBold(!bold)} aria-label="Kalın"><b>B</b></button><button className={italic ? 'active' : ''} onClick={() => setItalic(!italic)} aria-label="İtalik"><i>I</i></button><button className={underline ? 'active' : ''} onClick={() => setUnderline(!underline)} aria-label="Altı çizili"><u>U</u></button><select aria-label="Metin hizalama" value={align} onChange={(event) => setAlign(event.target.value as typeof align)}><option value="left">Sola hizala</option><option value="center">Ortala</option><option value="right">Sağa hizala</option><option value="justify">İki yana yasla</option></select></div>
@@ -629,6 +643,13 @@ export function PdfEditorPage() {
       </aside>
     </div>
     {busy && <div className="busy-indicator"><LoaderCircle className="spin" size={18} /> {activeJob ? `Arka planda işleniyor · %${activeJob.progress}` : 'İşleniyor…'}{activeJob && <button onClick={() => cancelLocalJob(activeJob.id)}>İptal</button>}</div>}
+    {ocrOpen && <div className="modal-backdrop"><section className="dialog-card ocr-dialog" role="dialog" aria-modal="true" aria-label="Gelişmiş OCR"><button className="dialog-close" onClick={() => setOcrOpen(false)} aria-label="Kapat"><X size={17} /></button><span className="dialog-icon"><ScanText size={24} /></span><h2>Taramayı metne dönüştür</h2><p>Sayfa görünümü korunur. Tanınan metni seçebilir, arayabilir ve düzenleyebilirsiniz. El yazısını ve düşük güvenli sözcükleri kontrol edin.</p>
+      <div className="form-row"><label>Dil<select value={ocrOptions.language} onChange={(event) => setOcrOptions({ ...ocrOptions, language: event.target.value })}><option value="tur+eng">Türkçe + İngilizce</option><option value="tur">Türkçe</option><option value="eng">İngilizce</option></select></label><label>Çözünürlük<select value={ocrOptions.dpi} onChange={(event) => setOcrOptions({ ...ocrOptions, dpi: Number(event.target.value) })}><option value="200">200 DPI · Hızlı</option><option value="300">300 DPI · Önerilen</option><option value="400">400 DPI · Küçük yazılar</option></select></label></div>
+      <label>Belge türü<select value={ocrOptions.layout} onChange={(event) => setOcrOptions({ ...ocrOptions, layout: event.target.value as OcrOptions['layout'] })}><option value="auto">Otomatik algıla</option><option value="document">Düz metin / Paragraf</option><option value="table">Tablo / Form / Fatura</option><option value="sparse">Seyrek yazı / Makbuz</option></select></label>
+      <label>Sayfalar<select value={ocrScope} onChange={(event) => setOcrScope(event.target.value as typeof ocrScope)}><option value="all">Tüm taranmış sayfalar</option><option value="current">Yalnızca açık sayfa ({page + 1})</option></select></label>
+      <div className="ocr-checks"><label><input type="checkbox" checked={ocrOptions.enhance} onChange={(event) => setOcrOptions({ ...ocrOptions, enhance: event.target.checked })} /> Soluk tarama / gölge iyileştirme</label><label><input type="checkbox" checked={ocrOptions.deskew} onChange={(event) => setOcrOptions({ ...ocrOptions, deskew: event.target.checked })} /> Hafif eğiklikleri tanımadan önce düzelt</label><label><input type="checkbox" checked={ocrOptions.force} onChange={(event) => setOcrOptions({ ...ocrOptions, force: event.target.checked })} /> Eski OCR katmanını yeniden tanı</label></div>
+      {ocrAudit && <div className="ocr-page-results"><strong>Son işlem · {ocrAudit.word_count} sözcük</strong>{ocrAudit.missing_languages.length > 0 && <p>Eksik dil: {ocrAudit.missing_languages.join(', ')}</p>}{ocrAudit.page_results.map((item) => <div key={item.page}><button onClick={() => { setPage(item.page - 1); setOcrOpen(false) }}>Sayfa {item.page}</button><span>{item.status === 'skipped' ? 'Mevcut metin korundu / Seçim dışında' : `${item.words} sözcük · Güven %${item.confidence}`}</span></div>)}</div>}
+      <button className="primary-button full" disabled={busy} onClick={applyOcr}><ScanText size={17} /> OCR başlat</button></section></div>}
     <input ref={imageInput} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff" onChange={receiveImage} />
     {protectOpen && <div className="modal-backdrop"><section className="dialog-card" role="dialog" aria-modal="true" aria-label="PDF koruma"><button className="dialog-close" onClick={() => setProtectOpen(false)}><X size={17} /></button><span className="dialog-icon"><LockKeyhole size={24} /></span><h2>Şifreli kopya oluştur</h2><p>Çalışma belgesi açık kalır; AES-256 ile korunan ayrı bir PDF kaydedilir.</p><label>Parola<input autoFocus type="password" minLength={4} value={protectPassword} onChange={(event) => setProtectPassword(event.target.value)} /></label><div className="security-note"><LockKeyhole size={16} /><span>Yazdırmaya izin verilir; kopyalama ve açıklama ekleme kapatılır.</span></div><button className="primary-button full" onClick={protect} disabled={busy || protectPassword.length < 4}>Şifreli kopyayı kaydet</button></section></div>}
     {metadataOpen && <div className="modal-backdrop"><section className="dialog-card" role="dialog" aria-modal="true" aria-label="PDF bilgileri"><button className="dialog-close" onClick={() => setMetadataOpen(false)}><X size={17} /></button><span className="dialog-icon"><FileCog size={24} /></span><h2>PDF dosya bilgileri</h2><p>Başlık, yazar, konu ve anahtar kelimeler PDF metadata alanına yazılır.</p><label>Başlık<input autoFocus value={metadata.title} onChange={(event) => setMetadata({ ...metadata, title: event.target.value })} /></label><label>Yazar<input value={metadata.author} onChange={(event) => setMetadata({ ...metadata, author: event.target.value })} /></label><label>Konu<input value={metadata.subject} onChange={(event) => setMetadata({ ...metadata, subject: event.target.value })} /></label><label>Anahtar kelimeler<input value={metadata.keywords} onChange={(event) => setMetadata({ ...metadata, keywords: event.target.value })} /></label><button className="primary-button full" onClick={saveMetadata} disabled={busy}>Bilgileri kaydet</button></section></div>}

@@ -1,5 +1,17 @@
 # İlerleme
 
+## 27 Ekim 2026 — 0.3.1 OCR geliştirmeleri
+
+- 300 DPI varsayılan, 200/400 DPI seçimi; Türkçe/İngilizce, otomatik/düz metin/tablo/seyrek yerleşim profilleri ve tek sayfa/tüm belge kapsamı eklendi.
+- OpenCV ile gölge/kontrast iyileştirme, ±7 derece küçük açı düzeltme ve tanıma görüntüsünde form çizgisi ayıklama eklendi. Orijinal PDF görünümü korunuyor; ters dönüşüm koordinat kaymasını önlüyor.
+- OCR sözcük kutuları font ölçüleriyle iki eksende eşleniyor. Döndürülmüş sayfalar normalize ediliyor; güvenler kalıcı sayfa verisinde tutuluyor ve düşük güvenli sözcükler arayüzde işaretlenebiliyor.
+- OCR metin değişimi artık görünmez katmanla birlikte alttaki eski görüntü piksellerini kaldırıyor. Eski OCR katmanını yeniden tanıma kopya metin üretmiyor. Sayfa numaralı hibrit taramalar destekleniyor.
+- Arka plan OCR işi sayfa ilerlemesi, iptal, 24 MP raster sınırı ve geçiş başına 90 saniye zaman aşımı içeriyor. Boş sonuç başarı olarak raporlanmıyor.
+- Soluk, 1,7 derece eğik Türkçe tablo örneğinde 20 sözcük, %93,7 motor güveni; tutar ve fatura numarası doğrulandı. OCR öncesi/sonrası sayfa rasteri birebir aynı; sözcük kutularının güven verileri yeniden açıldığında korundu. Bu sentetik örnektir, kullanıcı belgelerinde doğruluk garantisi değildir.
+- 59 backend ve 4 frontend testi geçti; OCR için koordinat, döndürme, yeniden tanıma, piksel silme, güven verisi, iptal ve hibrit sayfa senaryoları doğrulandı. Paketlenmiş ve kurulu 0.3.1 kopyaları bağımsız native backend süreçlerinde gerçek dosya yükleme → kuyruk → OCR → PDF indirme → metin doğrulama akışıyla kontrol edildi.
+- Metin değişimi/bul-değiştir/redaksiyon sırasında kaldırılan kelimeler OCR güven metadata verisinden de temizleniyor; eski metnin ham çıktı dosyasında ve sayfa metninde kalmadığı ayrıca test ediliyor.
+- Windows 0.3.1 kurulum paketi üretildi, eski sürüm resmi kaldırıcıyla güncellendi ve yeni uygulama otomatik açıldı.
+
 ## 26 Ekim 2026
 
 - 0.3.0 OCR: Taranmış PDF sayfaları görsel kapsama ve metin katmanına göre algılanıyor; yalnızca gerekli sayfalara Türkçe + İngilizce, koordinatlı ve güven skorlu görünmez metin katmanı ekleniyor.

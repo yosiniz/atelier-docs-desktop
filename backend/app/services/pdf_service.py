@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import re
 from pathlib import Path
 from typing import Iterable
@@ -81,7 +82,7 @@ def inspect_pdf(path: Path) -> dict:
                 for image in page.get_images(full=True)
                 for rect in page.get_image_rects(image[0])
             )
-            scanned_page = len(words) < 4 and image_coverage >= 0.2
+            scanned_page = len(words) < 20 and image_coverage >= 0.5 and not any(trace.get("type") == 3 for trace in page.get_texttrace())
             pages.append({
                 "index": index,
                 "number": index + 1,
@@ -112,6 +113,12 @@ def render_page(path: Path, page_index: int, scale: float = 1.5) -> bytes:
 def text_blocks(path: Path, page_index: int) -> list[dict]:
     with fitz.open(path) as document:
         page = document[page_index]
+        invisible_rects = [fitz.Rect(trace["bbox"]) for trace in page.get_texttrace() if trace.get("type") == 3]
+        try:
+            kind, value = document.xref_get_key(page.xref, "AtelierOCR")
+            ocr_words = json.loads(value) if kind == "string" else []
+        except (ValueError, TypeError):
+            ocr_words = []
         result = []
         for block_index, block in enumerate(page.get_text("dict")["blocks"]):
             if block.get("type") != 0:
@@ -128,16 +135,26 @@ def text_blocks(path: Path, page_index: int) -> list[dict]:
                     color_value = int(span.get("color", 0))
                     bbox = list(span.get("bbox", block["bbox"]))
                     origin = span.get("origin", (bbox[0], bbox[3]))
+                    span_rect = fitz.Rect(bbox)
+                    is_ocr = any((span_rect & rect).get_area() > span_rect.get_area() * .5 for rect in invisible_rects)
+                    ocr_word = next((word for word in ocr_words if word["text"].strip() == text.strip() and (span_rect & fitz.Rect(word["rect"])).get_area() > span_rect.get_area() * .5), None) if is_ocr else None
+                    confidence = ocr_word["confidence"] if ocr_word else None
+                    if ocr_word:
+                        text = text.strip()
+                        bbox = ocr_word["rect"]
+                        origin = (bbox[0], bbox[3] - (bbox[3] - bbox[1]) * .04)
                     result.append({
                         "id": f"p{page_index}-b{block_index}-l{line_index}-s{span_index}",
                         "text": text,
                         "bbox": bbox,
                         "baseline": float(origin[1]),
                         "font": span.get("font", "Helvetica"),
-                        "font_size": float(span.get("size", 11)),
+                        "font_size": max(4.0, min(144.0, float((bbox[3] - bbox[1]) / .75))) if ocr_word else float(span.get("size", 11)),
                         "color": f"#{color_value:06x}",
                         "bold": bool(span.get("flags", 0) & 16),
                         "italic": bool(span.get("flags", 0) & 2),
+                        "is_ocr": is_ocr,
+                        "confidence": confidence,
                     })
         return result
 
@@ -226,6 +243,24 @@ def _span_style_at(page: fitz.Page, rect: fitz.Rect) -> dict:
     }
 
 
+def _is_ocr_rect(page: fitz.Page, rect: fitz.Rect) -> bool:
+    return any(trace.get("type") == 3 and (rect & fitz.Rect(trace["bbox"])).get_area() > rect.get_area() * .5
+               for trace in page.get_texttrace())
+
+
+def _remove_ocr_review_words(page: fitz.Page, rects: list[fitz.Rect]) -> None:
+    """Redacted text must not survive in the OCR confidence/review metadata."""
+    kind, value = page.parent.xref_get_key(page.xref, "AtelierOCR")
+    if kind != "string":
+        return
+    try:
+        words = json.loads(value)
+        words = [word for word in words if not any(fitz.Rect(word["rect"]).intersects(rect) for rect in rects)]
+        page.parent.xref_set_key(page.xref, "AtelierOCR", fitz.get_pdf_str(json.dumps(words, ensure_ascii=False)))
+    except (ValueError, TypeError, KeyError):
+        page.parent.xref_set_key(page.xref, "AtelierOCR", "null")
+
+
 def replace_text(path: Path, output: Path, request) -> dict:
     with fitz.open(path) as document:
         page_indexes = request.pages if request.pages is not None else list(range(document.page_count))
@@ -245,10 +280,14 @@ def replace_text(path: Path, output: Path, request) -> dict:
         font_path = _unicode_font()
         for page_index, items in plan.items():
             page = document[page_index]
+            has_ocr_match = False
             for rect, _style in items:
-                page.add_redact_annot(rect, fill=False)
+                is_ocr = _is_ocr_rect(page, rect)
+                has_ocr_match = has_ocr_match or is_ocr
+                page.add_redact_annot(rect, fill=(1, 1, 1) if is_ocr else False)
+            _remove_ocr_review_words(page, [rect for rect, _ in items])
             page.apply_redactions(
-                images=fitz.PDF_REDACT_IMAGE_NONE,
+                images=fitz.PDF_REDACT_IMAGE_PIXELS if has_ocr_match else fitz.PDF_REDACT_IMAGE_NONE,
                 graphics=fitz.PDF_REDACT_LINE_ART_NONE,
             )
             if request.replacement:
@@ -289,9 +328,13 @@ def edit_text(path: Path, output: Path, request) -> dict:
 
         # Redaction removes intersecting content operators from the content stream;
         # the old text is not merely covered by an overlay.
-        page.add_redact_annot(source_rect, fill=False)
+        # An OCR word is only an invisible layer. Editing it must also remove
+        # the printed pixels below, otherwise both old and new words appear.
+        is_ocr = _is_ocr_rect(page, source_rect)
+        _remove_ocr_review_words(page, [source_rect])
+        page.add_redact_annot(source_rect, fill=(1, 1, 1) if is_ocr else False)
         page.apply_redactions(
-            images=fitz.PDF_REDACT_IMAGE_NONE,
+            images=fitz.PDF_REDACT_IMAGE_PIXELS if is_ocr else fitz.PDF_REDACT_IMAGE_NONE,
             graphics=fitz.PDF_REDACT_LINE_ART_NONE,
         )
 
@@ -705,6 +748,7 @@ def redact_areas(path: Path, output: Path, page_index: int,
         page = document[page_index]
         rects = [_validated_rect(page, values) for values in rect_values]
         before_text = page.get_text()
+        _remove_ocr_review_words(page, rects)
         for rect in rects:
             page.add_redact_annot(rect, fill=(0, 0, 0), text="")
         page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_PIXELS)

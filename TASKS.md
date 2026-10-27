@@ -69,6 +69,12 @@
 - [x] Taranmış PDF sayfalarını otomatik algılama, yerel Türkçe + İngilizce OCR ve güven göstergesi
 - [x] JPG/PNG/BMP/WebP/çok sayfalı TIFF taramalarından aranabilir OCR PDF oluşturma
 - [x] Windows kurulumuna Tesseract motoru ile `tur+eng` dil paketlerini dahil etme
+- [x] Soluk tarama/gölge iyileştirme, küçük açı düzeltme ve OCR'a özel tablo çizgisi ayıklama
+- [x] OCR ayarları, sayfa seçimi, arka plan ilerlemesi ve iptal
+- [x] Kelime genişliği/yüksekliği ile uyumlu seçim kutuları, döndürülmüş sayfa koordinatları
+- [x] Kalıcı kelime güvenleri ve düşük güvenli sonuçların görsel kontrolü
+- [x] OCR metni değiştirildiğinde eski tarama piksellerini de kaldırma
+- [x] Eski OCR katmanını yinelenmeden yeniden oluşturma
 - [x] Kalıcı redaksiyon aracı
 - [x] AES-256 şifreli kopya, kilit açma ve metadata araçları
 - [x] Temel DOCX/XLSX/CSV/PPTX editör entegrasyonu

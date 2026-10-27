@@ -145,10 +145,25 @@ export const addPdfInk = (id: string, payload: unknown) =>
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   })
 
-export const ocrPdf = (id: string, language = 'tur+eng', force = false) =>
-  request<{ pdf: PdfInfo; audit: { language: string; missing_languages: string[]; word_count: number; average_confidence: number; pages_processed: number; pages_skipped: number } }>(`/pdf/${id}/ocr`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language, dpi: 200, force }),
+export type OcrOptions = { language: string; dpi: number; layout: 'auto' | 'document' | 'table' | 'sparse'; enhance: boolean; deskew: boolean; force: boolean; pages?: number[] }
+export type OcrAudit = { language: string; missing_languages: string[]; word_count: number; low_confidence_words: number; average_confidence: number; pages_processed: number; pages_skipped: number; page_results: { page: number; status: string; words: number; confidence: number; low_confidence_words?: number }[] }
+
+export async function ocrPdf(id: string, options: OcrOptions, onUpdate?: (job: { id: string; progress: number }) => void) {
+  type Result = { pdf: PdfInfo; audit: OcrAudit }
+  let job = await request<LocalJob<Result>>(`/jobs/pdf/${id}/ocr`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(options),
   })
+  onUpdate?.(job)
+  while (!['completed', 'failed', 'cancelled'].includes(job.status)) {
+    await new Promise((resolve) => setTimeout(resolve, 650))
+    job = await request<LocalJob<Result>>(`/jobs/${job.id}`)
+    onUpdate?.(job)
+  }
+  if (job.status === 'failed') throw new Error(job.error || 'OCR tamamlanamadı')
+  if (job.status === 'cancelled') throw new Error('OCR iptal edildi; belge korunuyor.')
+  if (!job.result) throw new Error('OCR sonucu alınamadı')
+  return job.result
+}
 
 export const addPdfWatermark = (id: string, payload: unknown) =>
   request<PdfInfo>(`/pdf/${id}/content/watermark`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })

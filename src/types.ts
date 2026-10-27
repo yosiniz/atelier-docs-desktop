@@ -26,6 +26,8 @@ export type UploadedDocument = {
 }
 
 export type TextBlock = {
+  is_ocr?: boolean
+  confidence?: number | null
   id: string
   text: string
   bbox: [number, number, number, number]

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import io
+import json
+import math
 import os
 import shutil
 import sys
@@ -9,6 +11,8 @@ from pathlib import Path
 
 import fitz
 from PIL import Image, ImageOps, ImageSequence
+
+from .ocr_preprocessing import prepare_scan, original_rect
 
 
 def _project_root() -> Path:
@@ -126,9 +130,31 @@ def _ocr_font() -> Path | None:
     return next((item for item in candidates if item.is_file()), None)
 
 
-def _recognize(image: Image.Image, language: str, config: str, engine) -> tuple[list[dict], list[float]]:
-    prepared = ImageOps.autocontrast(ImageOps.grayscale(image))
-    data = engine.image_to_data(prepared, lang=language, config=f"{config} --oem 1 --psm 3".strip(), output_type=engine.Output.DICT)
+def _recognize(image: Image.Image, language: str, config: str, engine, *, layout="auto", enhance=True, deskew=True) -> tuple[list[dict], list[float]]:
+    prepared, inverse, angle = prepare_scan(image, enhance=enhance, deskew=deskew, table=layout == "table")
+    psm = {"auto": 3, "document": 6, "table": 11, "sparse": 11}[layout]
+
+    def recognize(psm_value):
+        try:
+            return engine.image_to_data(prepared, lang=language,
+                config=f"{config} --oem 1 --psm {psm_value} -c preserve_interword_spaces=1".strip(),
+                output_type=engine.Output.DICT, timeout=90)
+        except RuntimeError as exc:
+            raise RuntimeError("OCR sayfası 90 saniyede tamamlanamadı. Daha düşük çözünürlükle yeniden deneyin.") from exc
+
+    def score(data):
+        return sum(len(str(text).strip()) * max(0, float(conf) - 35)
+                   for text, conf in zip(data.get("text", []), data.get("conf", [])))
+
+    data = recognize(psm)
+    # A sparse fallback helps receipts, forms and pages where automatic page
+    # segmentation finds no useful text. Keep one pass, never duplicate words.
+    if layout == "auto":
+        usable = [float(conf) for text, conf in zip(data.get("text", []), data.get("conf", [])) if str(text).strip() and float(conf) >= 0]
+        if not usable or sum(usable) / len(usable) < 75:
+            fallback = recognize(11)
+            if score(fallback) > score(data):
+                data = fallback
     words: list[dict] = []
     confidences: list[float] = []
     for index, raw_text in enumerate(data.get("text", [])):
@@ -139,24 +165,49 @@ def _recognize(image: Image.Image, language: str, config: str, engine) -> tuple[
             confidence = -1
         if not text or confidence < 0:
             continue
-        words.append({"text": text, "left": int(data["left"][index]), "top": int(data["top"][index]), "width": int(data["width"][index]), "height": int(data["height"][index]), "confidence": confidence})
+        left, top, right, bottom = original_rect(int(data["left"][index]), int(data["top"][index]), int(data["width"][index]), int(data["height"][index]), inverse)
+        left, top = max(0.0, left), max(0.0, top)
+        right, bottom = min(float(image.width), right), min(float(image.height), bottom)
+        if right <= left or bottom <= top:
+            continue
+        words.append({"text": text, "left": left, "top": top, "width": right-left, "height": bottom-top, "confidence": confidence, "deskew_angle": angle})
         confidences.append(confidence)
     return words, confidences
 
 
 def _add_text_layer(page: fitz.Page, words: list[dict], scale_x: float, scale_y: float) -> None:
+    # Normalize the page's rotation into its content before placing OCR boxes.
+    # This retains its rendered appearance and gives the editor one coordinate
+    # system for the preview, selection, redaction and new text.
+    if page.rotation:
+        page.remove_rotation()
     font = _ocr_font()
     font_name = "OCRSans" if font else "helv"
     if font:
         page.insert_font(fontname=font_name, fontfile=str(font))
+    metrics = fitz.Font(fontfile=str(font)) if font else fitz.Font("helv")
+    review_words = []
     for word in words:
         x = word["left"] * scale_x
         y = word["top"] * scale_y
-        height = max(4.0, word["height"] * scale_y)
-        page.insert_text((x, y + height * 0.88), word["text"], fontsize=max(4.0, height * 0.82), fontname=font_name, render_mode=3, overlay=True)
+        height = max(1.0, word["height"] * scale_y)
+        width = max(1.0, word["width"] * scale_x)
+        # Fit both axes to the recognized glyph box. The old fixed point size
+        # produced hitboxes much narrower/wider than the scanned word.
+        size = height / (metrics.ascender - metrics.descender)
+        baseline = fitz.Point(x, y + metrics.ascender * size)
+        natural_width = max(0.01, metrics.text_length(word["text"], fontsize=size))
+        rect = fitz.Rect(x, y, x + width, y + height)
+        transform = fitz.Matrix(width / natural_width, 1)
+        page.insert_text(baseline, word["text"], fontsize=size, fontname=font_name, render_mode=3,
+                         morph=(baseline, transform), overlay=True)
+        review_words.append({"text": word["text"], "rect": list(rect), "confidence": word["confidence"]})
+    page.parent.xref_set_key(page.xref, "AtelierOCR", fitz.get_pdf_str(json.dumps(review_words, ensure_ascii=False)))
 
 
-def ocr_pdf(path: Path, output: Path, language: str = "tur+eng", dpi: int = 200, force: bool = False) -> dict:
+def ocr_pdf(path: Path, output: Path, language: str = "tur+eng", dpi: int = 300, force: bool = False,
+            *, layout: str = "auto", enhance: bool = True, deskew: bool = True,
+            pages: list[int] | None = None, progress=None, cancel_event=None) -> dict:
     engine, tessdata, installed = _configure_engine()
     actual_language, missing = _language(language, installed)
     config = f'--tessdata-dir {tessdata.as_posix()}' if tessdata else ""
@@ -166,27 +217,63 @@ def ocr_pdf(path: Path, output: Path, language: str = "tur+eng", dpi: int = 200,
     with fitz.open(path) as source:
         if source.needs_pass:
             raise ValueError("Şifreli PDF için önce kilidi açın")
-        result = fitz.open()
-        result.insert_pdf(source)
+        if pages is not None and any(index < 0 or index >= len(source) for index in pages):
+            raise ValueError("OCR sayfa seçimi belge sınırları dışında")
+        result = fitz.open(path)
         for page_index, source_page in enumerate(source):
-            if not force and len(source_page.get_text("words")) >= 4:
+            if cancel_event and cancel_event.is_set():
+                result.close()
+                raise RuntimeError("OCR iptal edildi")
+            if progress:
+                progress(round(5 + 85 * page_index / len(source)))
+            traces = source_page.get_texttrace()
+            visible_text = any(trace.get("type") != 3 and trace.get("chars") for trace in traces)
+            invisible_text = any(trace.get("type") == 3 and trace.get("chars") for trace in traces)
+            visible_rects = [fitz.Rect(trace["bbox"]) for trace in traces if trace.get("type") != 3 and trace.get("chars")]
+            scan_background = any(
+                fitz.Rect(info["bbox"]).get_area() >= source_page.rect.get_area() * .5
+                for info in source_page.get_image_info()
+            )
+            hybrid_scan = scan_background and len(source_page.get_text("words")) < 20
+            if (pages is not None and page_index not in pages) or (visible_text and not hybrid_scan) or (invisible_text and not force):
                 skipped += 1
                 page_results.append({"page": page_index + 1, "status": "skipped", "words": 0, "confidence": 0})
                 continue
-            pixmap = source_page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72), alpha=False)
+            # Bound raster memory even for architectural/oversized PDF pages.
+            factor = min(dpi / 72, math.sqrt(24_000_000 / max(1, source_page.rect.width * source_page.rect.height)))
+            pixmap = source_page.get_pixmap(matrix=fitz.Matrix(factor, factor), alpha=False)
             image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
-            words, page_confidences = _recognize(image, actual_language, config, engine)
+            words, page_confidences = _recognize(image, actual_language, config, engine, layout=layout, enhance=enhance, deskew=deskew)
+            if visible_rects:
+                kept = []
+                for word in words:
+                    rect = fitz.Rect(word["left"], word["top"], word["left"] + word["width"], word["top"] + word["height"])
+                    rect = fitz.Rect(rect.x0 * source_page.rect.width / image.width, rect.y0 * source_page.rect.height / image.height,
+                                     rect.x1 * source_page.rect.width / image.width, rect.y1 * source_page.rect.height / image.height) * source_page.derotation_matrix
+                    if not any((rect & existing).get_area() > rect.get_area() * .4 for existing in visible_rects):
+                        kept.append(word)
+                words = kept
+                page_confidences = [word["confidence"] for word in words]
+            if invisible_text:
+                target_page = result[page_index]
+                for trace in traces:
+                    if trace.get("type") == 3 and trace.get("chars"):
+                        target_page.add_redact_annot(trace["bbox"], fill=False)
+                target_page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=fitz.PDF_REDACT_LINE_ART_NONE)
             _add_text_layer(result[page_index], words, source_page.rect.width / image.width, source_page.rect.height / image.height)
             processed += 1
             word_count += len(words)
             confidences.extend(page_confidences)
-            page_results.append({"page": page_index + 1, "status": "processed", "words": len(words), "confidence": round(sum(page_confidences) / len(page_confidences), 1) if page_confidences else 0})
+            page_results.append({"page": page_index + 1, "status": "processed", "words": len(words), "low_confidence_words": sum(c < 65 for c in page_confidences), "deskew_angle": words[0]["deskew_angle"] if words else 0, "confidence": round(sum(page_confidences) / len(page_confidences), 1) if page_confidences else 0})
         if processed == 0:
             result.close()
-            raise ValueError("Belgenin tüm sayfalarında zaten metin katmanı var")
+            raise ValueError("Seçilen sayfalarda metin katmanı var. Eski OCR'ı iyileştirmek için 'Eski OCR katmanını yeniden tanı' seçeneğini açın.")
+        if word_count == 0:
+            result.close()
+            raise ValueError("Okunabilir metin bulunamadı. Tablo/Form modunu veya daha net bir taramayı deneyin; belge değiştirilmedi.")
         result.save(output, garbage=4, deflate=True, clean=True)
         result.close()
-    return {"language": actual_language, "requested_language": language, "missing_languages": missing, "word_count": word_count, "average_confidence": round(sum(confidences) / len(confidences), 1) if confidences else 0, "pages_processed": processed, "pages_skipped": skipped, "page_results": page_results}
+    return {"language": actual_language, "requested_language": language, "missing_languages": missing, "word_count": word_count, "low_confidence_words": sum(c < 65 for c in confidences), "average_confidence": round(sum(confidences) / len(confidences), 1) if confidences else 0, "pages_processed": processed, "pages_skipped": skipped, "page_results": page_results}
 
 
 def ocr_images_to_pdf(paths: list[Path], output: Path, language: str = "tur+eng", dpi: int = 200) -> dict:
@@ -205,7 +292,7 @@ def ocr_images_to_pdf(paths: list[Path], output: Path, language: str = "tur+eng"
                     page_width, page_height = image.width * 72 / dpi, image.height * 72 / dpi
                     page = result.new_page(width=page_width, height=page_height)
                     stream = io.BytesIO()
-                    image.save(stream, format="JPEG", quality=94, optimize=True)
+                    image.save(stream, format="PNG")
                     page.insert_image(page.rect, stream=stream.getvalue())
                     _add_text_layer(page, words, page_width / image.width, page_height / image.height)
                     word_count += len(words)

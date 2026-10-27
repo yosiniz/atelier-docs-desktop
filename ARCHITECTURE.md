@@ -16,10 +16,13 @@ Electron (contextIsolation + sandbox)
                       ├─ image_service (Pillow)
                       ├─ conversion_service (python-docx + yerel dönüştürücüler)
                       ├─ office_service (DOCX/XLSX/CSV/PPTX düzenleme)
-                      └─ ocr_service (isteğe bağlı yerel Tesseract)
+                      ├─ ocr_service (yerel Tesseract, koordinatlı metin/güven katmanı)
+                      └─ ocr_preprocessing (OpenCV, aydınlatma/eğiklik/tablo düzeltme)
 ```
 
 ## PDF metin düzenleme yaklaşımı
+
+OCR işlemleri iş kuyruğunda çalışır. Tarama yalnızca tanıma için normalize edilir; ters dönüşüm matrisi sözcük koordinatlarını orijinal görüntüye taşır. PDF metin katmanı font ölçüleri ve yatay ölçekle kelime kutusuna yerleştirilir. Sayfanın `AtelierOCR` sözlüğü kelime koordinatları ve güvenlerini revizyonlarla saklar. OCR kelimesi düzenlenirken gerçek piksel redaksiyonu uygulanır. Mevcut dijital metinler ve hibrit taramalardaki sayfa numaraları yinelenmez.
 
 PDF akış tabanlı bir kelime işlemci formatı değildir. Motor önce metin bloklarının koordinatlarını ve baskın stilini çıkarır. Kullanıcı düzenleme yaptığında ilgili dikdörtgene gerçek PDF redaksiyonu uygulanır; bu adım kesişen metin operatörlerini içerik akışından siler. Ardından Unicode destekli yerel font gömülerek yeni metin aynı alana yazılır. Sonuç temizleme, çöp toplama ve deflate ile yeni revizyona kaydedilip yeniden açılarak doğrulanır.
 

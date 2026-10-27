@@ -51,7 +51,8 @@ def scanned_document_png(tmp_path):
     path = tmp_path / "taranmis-belge.png"
     image = Image.new("RGB", (1400, 850), "white")
     draw = ImageDraw.Draw(image)
-    font_path = "C:/Windows/Fonts/arial.ttf"
+    from backend.app.services.ocr_service import _ocr_font
+    font_path = str(_ocr_font() or "C:/Windows/Fonts/arial.ttf")
     try:
         heading = ImageFont.truetype(font_path, 62)
         body = ImageFont.truetype(font_path, 42)

@@ -146,8 +146,12 @@ class OfficeSaveRequest(BaseModel):
 
 class OcrRequest(BaseModel):
     language: str = Field(default="tur+eng", pattern=r"^[a-z]{3}(\+[a-z]{3})*$")
-    dpi: int = Field(default=200, ge=120, le=300)
+    dpi: int = Field(default=300, ge=120, le=400)
     force: bool = False
+    layout: str = Field(default="auto", pattern=r"^(auto|document|table|sparse)$")
+    enhance: bool = True
+    deskew: bool = True
+    pages: list[int] | None = Field(default=None, min_length=1, max_length=500)
 
 
 class WatermarkRequest(BaseModel):
