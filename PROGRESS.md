@@ -1,5 +1,13 @@
 # İlerleme
 
+## 27 Ekim 2026 — 0.3.2 otomatik biçim koruma
+
+- Metin değiştirirken ve taşırken otomatik kaynak biçimi koruma varsayılan açıldı. Dijital PDF'de kaynak punto, renk, kalınlık/italik ve satır tabanı korunuyor; uygun gömülü font yeniden kullanılıyor.
+- Taramalarda görünmez OCR fontu yerine asıl sayfa görüntüsü örnekleniyor. Koyu mürekkep piksellerinden renk tonu, harf yüksekliğinden punto, yerel font şablonlarından yakın font ve kenar piksellerinden kâğıt tonu tahmin ediliyor.
+- Elle biçim değiştirme ve biçim yapıştırma destekleniyor. Asenkron biçim önizlemesi seçim değişiminde iptal ediliyor; backend kaydetmeden önce kaynak biçimini tekrar okuyor.
+- 65 backend ve 4 frontend testi geçti. Dijital metin testinde tam punto/renk/satır tabanı; gri ve mavi tarama testlerinde ±1 punto/±3 RGB toleransında eşleşme doğrulandı. Önce/sonra görüntüleri gözle kontrol edildi.
+- Windows paketinin gerçek API'sinde taramadan biçim okuma → sayıyı otomatik biçimle değiştirme → yeni punto ve rengi doğrulama → kalıcı silme akışı geçti (`automatic_style: passed`).
+
 ## 27 Ekim 2026 — 0.3.1 OCR geliştirmeleri
 
 - 300 DPI varsayılan, 200/400 DPI seçimi; Türkçe/İngilizce, otomatik/düz metin/tablo/seyrek yerleşim profilleri ve tek sayfa/tüm belge kapsamı eklendi.

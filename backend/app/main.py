@@ -17,12 +17,13 @@ from .config import API_TOKEN, APP_NAME
 from .models import (
     AddTextRequest, BlankPageRequest, CompressRequest, CropPageRequest, DeletePagesRequest, EncryptRequest,
     InkRequest, LinkRequest, MetadataRequest, MoveImageRequest, OcrRequest, OfficeSaveRequest, PageDecorationRequest, RedactRequest, ReorderPagesRequest, RotateRequest, ShapeRequest, WatermarkRemoveRequest, WatermarkRequest,
-    SearchReplaceRequest, SplitRequest, TextEditRequest, UnlockRequest,
+    SearchReplaceRequest, SplitRequest, TextEditRequest, TextStyleProbeRequest, UnlockRequest,
 )
 from .services.image_service import compress_to_target, convert_image, edit_image
 from .services.conversion_service import docx_to_pdf, images_to_pdf, pdf_to_docx, pdf_to_images, pdf_to_pptx, pdf_to_xlsx
 from .services.office_service import inspect_office, presentation_to_pdf, save_office, spreadsheet_to_pdf
 from .services.ocr_service import ocr_engine_status, ocr_images_to_pdf, ocr_pdf
+from .services.text_style_service import source_text_style
 from .jobs import jobs
 from .services.pdf_service import (
     compress_pdf,
@@ -65,7 +66,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title=APP_NAME, version="0.3.1", docs_url="/api/docs", lifespan=lifespan)
+app = FastAPI(title=APP_NAME, version="0.3.2", docs_url="/api/docs", lifespan=lifespan)
 app.include_router(whatsapp_router)
 app.add_middleware(
     CORSMiddleware,
@@ -264,6 +265,19 @@ def pdf_edit_text(document_id: str, request: TextEditRequest) -> dict:
         return {"ok": True, "data": {"audit": audit, "pdf": inspect_pdf(current)}}
     except (ValueError, IndexError) as exc:
         staged.unlink(missing_ok=True)
+        raise fail(400, str(exc)) from exc
+
+
+@app.post("/api/pdf/{document_id}/text-style")
+def pdf_source_text_style(document_id: str, request: TextStyleProbeRequest) -> dict:
+    try:
+        with fitz.open(get_path(document_id)) as document:
+            page = document[request.page]
+            rect = fitz.Rect(request.rect) & page.rect
+            if rect.is_empty or rect.is_infinite:
+                raise ValueError("Metin alanı geçersiz")
+            return {"ok": True, "data": source_text_style(page, rect, request.original_text)}
+    except (ValueError, IndexError) as exc:
         raise fail(400, str(exc)) from exc
 
 

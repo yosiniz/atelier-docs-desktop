@@ -33,6 +33,13 @@ class TextEditRequest(BaseModel):
     text: str = Field(max_length=10000)
     original_text: str = Field(default="", max_length=10000)
     style: TextStyle = Field(default_factory=TextStyle)
+    preserve_style: bool = False
+
+
+class TextStyleProbeRequest(BaseModel):
+    page: int = Field(ge=0)
+    rect: tuple[float, float, float, float]
+    original_text: str = Field(default="", max_length=10000)
 
 
 class SearchReplaceRequest(BaseModel):

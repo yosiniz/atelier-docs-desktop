@@ -57,14 +57,25 @@ try:
         blocks = client.get(f"/api/pdf/{identifier}/pages/0/text").json()["data"]
         selected = next(block for block in blocks if block["text"] == "12345")
         assert selected["confidence"] is not None and selected["is_ocr"]
+        probe = client.post(f"/api/pdf/{identifier}/text-style", json={"page": 0,
+            "rect": selected["bbox"], "original_text": "12345"})
+        probe.raise_for_status()
+        style = probe.json()["data"]
+        changed = client.post(f"/api/pdf/{identifier}/edit-text", json={"page": 0,
+            "rect": selected["bbox"], "text": "67890", "original_text": "12345", "preserve_style": True})
+        changed.raise_for_status()
+        after_blocks = client.get(f"/api/pdf/{identifier}/pages/0/text").json()["data"]
+        selected = next(block for block in after_blocks if block["text"] == "67890")
+        assert abs(selected["font_size"] - style["font_size"]) < .05
+        assert selected["color"] == style["color"]
         edited = client.post(f"/api/pdf/{identifier}/edit-text", json={"page": 0,
-            "rect": selected["bbox"], "text": "", "original_text": "12345"})
+            "rect": selected["bbox"], "text": "", "original_text": "67890"})
         edited.raise_for_status()
         removed = client.get(f"/api/files/{identifier}/download").content
-        assert b"12345" not in removed
+        assert b"12345" not in removed and b"67890" not in removed
         with fitz.open(stream=removed, filetype="pdf") as document:
             assert "12345" not in document[0].get_text()
-        print(json.dumps({"packaged_ocr": "passed", "permanent_ocr_delete": "passed", "turkish": True, "audit": job["result"]["audit"]}, ensure_ascii=True))
+        print(json.dumps({"packaged_ocr": "passed", "automatic_style": "passed", "permanent_ocr_delete": "passed", "turkish": True, "audit": job["result"]["audit"]}, ensure_ascii=True))
 finally:
     if os.name == "nt":
         subprocess.run(["taskkill.exe", "/PID", str(process.pid), "/T", "/F"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

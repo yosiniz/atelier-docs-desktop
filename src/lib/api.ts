@@ -61,6 +61,11 @@ export const editText = (id: string, payload: unknown) =>
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
   })
 
+export const getSourceTextStyle = (id: string, page: number, rect: number[], original_text: string) =>
+  request<{ font_size: number; font_family: string; color: string; bold: boolean; italic: boolean; baseline: number; estimated: boolean }>(`/pdf/${id}/text-style`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page, rect, original_text }),
+  })
+
 export interface PdfSearchMatch {
   page: number
   bbox: number[]

@@ -17,7 +17,8 @@ Electron (contextIsolation + sandbox)
                       ├─ conversion_service (python-docx + yerel dönüştürücüler)
                       ├─ office_service (DOCX/XLSX/CSV/PPTX düzenleme)
                       ├─ ocr_service (yerel Tesseract, koordinatlı metin/güven katmanı)
-                      └─ ocr_preprocessing (OpenCV, aydınlatma/eğiklik/tablo düzeltme)
+                      ├─ ocr_preprocessing (OpenCV, aydınlatma/eğiklik/tablo düzeltme)
+                      └─ text_style_service (kaynak PDF biçimi / tarama piksel eşleştirmesi)
 ```
 
 ## PDF metin düzenleme yaklaşımı

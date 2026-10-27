@@ -10,6 +10,8 @@ import fitz
 from pypdf import PdfReader, PdfWriter
 from PIL import Image
 
+from .text_style_service import source_text_style
+
 
 def _unicode_font(bold: bool = False, italic: bool = False, family: str | None = None) -> Path | None:
     sans_variants = {
@@ -325,6 +327,28 @@ def edit_text(path: Path, output: Path, request) -> dict:
             raise ValueError("Yeni metin alanı sayfa sınırları dışında")
         source_rect &= page.rect
         target_rect &= page.rect
+        style = request.style
+        source_baseline = request.source_baseline
+        embedded_font = None
+        erase_fill = (1, 1, 1)
+        if request.preserve_style:
+            detected = source_text_style(page, source_rect, request.original_text)
+            style = style.model_copy(update={key: detected[key] for key in ("font_size", "color", "bold", "italic", "font_family")})
+            source_baseline = detected["baseline"]
+            if detected.get("background_color"):
+                erase_fill = _hex_to_rgb(detected["background_color"])
+            if not detected["estimated"]:
+                for entry in page.get_fonts(full=True):
+                    if entry[3].split("+")[-1] != detected["font_family"].split("+")[-1]:
+                        continue
+                    try:
+                        data = document.extract_font(entry[0])[3]
+                        candidate = fitz.Font(fontbuffer=data) if data else None
+                        if candidate and all(character.isspace() or candidate.has_glyph(ord(character)) for character in request.text):
+                            embedded_font = data
+                            break
+                    except (ValueError, RuntimeError):
+                        continue
 
         # Redaction removes intersecting content operators from the content stream;
         # the old text is not merely covered by an overlay.
@@ -332,7 +356,7 @@ def edit_text(path: Path, output: Path, request) -> dict:
         # the printed pixels below, otherwise both old and new words appear.
         is_ocr = _is_ocr_rect(page, source_rect)
         _remove_ocr_review_words(page, [source_rect])
-        page.add_redact_annot(source_rect, fill=(1, 1, 1) if is_ocr else False)
+        page.add_redact_annot(source_rect, fill=erase_fill if is_ocr else False)
         page.apply_redactions(
             images=fitz.PDF_REDACT_IMAGE_PIXELS if is_ocr else fitz.PDF_REDACT_IMAGE_NONE,
             graphics=fitz.PDF_REDACT_LINE_ART_NONE,
@@ -340,20 +364,26 @@ def edit_text(path: Path, output: Path, request) -> dict:
 
         if request.text:
             base14_name = _base14_font_name(
-                request.text, request.style.font_family,
-                request.style.bold, request.style.italic,
+                request.text, style.font_family,
+                style.bold, style.italic,
             )
             font_path = None if base14_name else _unicode_font(
-                request.style.bold, request.style.italic, request.style.font_family,
+                style.bold, style.italic, style.font_family,
             )
-            font_name = base14_name or (_font_name(request.style.bold, request.style.italic) if font_path else "helv")
-            font = fitz.Font(fontfile=str(font_path)) if font_path else fitz.Font(font_name)
+            font_name = base14_name or (_font_name(style.bold, style.italic) if font_path else "helv")
+            if embedded_font:
+                font_name = "AtelierOriginal" + __import__("hashlib").sha256(embedded_font).hexdigest()[:10]
+                page.insert_font(fontname=font_name, fontbuffer=embedded_font)
+                font = fitz.Font(fontbuffer=embedded_font)
+                font_path = None
+            else:
+                font = fitz.Font(fontfile=str(font_path)) if font_path else fitz.Font(font_name)
             lines = request.text.splitlines() or [request.text]
-            line_height = request.style.font_size * 1.2
+            line_height = style.font_size * 1.2
             baseline = (
-                request.source_baseline + target_rect.y0 - source_rect.y0
-                if request.source_baseline is not None
-                else target_rect.y0 + request.style.font_size * 0.8
+                source_baseline + target_rect.y0 - source_rect.y0
+                if source_baseline is not None
+                else target_rect.y0 + style.font_size * 0.8
             )
 
             # insert_textbox applies its own ascender/descender padding and can
@@ -363,10 +393,10 @@ def edit_text(path: Path, output: Path, request) -> dict:
                 line_baseline = baseline + line_index * line_height
                 if line_baseline > page.rect.y1:
                     raise ValueError("Yeni metin sayfa sınırlarının dışına taşıyor")
-                width = font.text_length(line, fontsize=request.style.font_size)
-                if request.style.align == "right":
+                width = font.text_length(line, fontsize=style.font_size)
+                if style.align == "right":
                     x = target_rect.x1 - width
-                elif request.style.align == "center":
+                elif style.align == "center":
                     x = target_rect.x0 + (target_rect.width - width) / 2
                 else:
                     x = target_rect.x0
@@ -374,18 +404,18 @@ def edit_text(path: Path, output: Path, request) -> dict:
                 page.insert_text(
                     (x, line_baseline),
                     line,
-                    fontsize=request.style.font_size,
+                    fontsize=style.font_size,
                     fontname=font_name,
                     fontfile=str(font_path) if font_path else None,
-                    color=_hex_to_rgb(request.style.color),
+                    color=_hex_to_rgb(style.color),
                     overlay=True,
                 )
-                if request.style.underline and line:
-                    underline_y = min(page.rect.y1, line_baseline + max(0.75, request.style.font_size * 0.08))
+                if style.underline and line:
+                    underline_y = min(page.rect.y1, line_baseline + max(0.75, style.font_size * 0.08))
                     page.draw_line(
                         (x, underline_y), (min(page.rect.x1, x + width), underline_y),
-                        color=_hex_to_rgb(request.style.color),
-                        width=max(0.5, request.style.font_size / 16),
+                        color=_hex_to_rgb(style.color),
+                        width=max(0.5, style.font_size / 16),
                         overlay=True,
                     )
 

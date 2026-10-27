@@ -35,6 +35,10 @@ PDF editöründeki **OCR** düğmesinden dil, 200/300/400 DPI, belge türü ve s
 
 Tanıma sonrası sözcüklerin güven değerleri kaydedilir; düşük güvenli sözcükler sarı kesikli kutuyla gösterilebilir. Seçilen OCR sözcüğünü değiştirmek/silmek hem görünmez metin katmanını hem de alttaki eski tarama piksellerini kalıcı kaldırır. OCR güveni doğruluk garantisi değildir; özellikle el yazısı ve tutarları kontrol edin.
 
+### Otomatik metin biçimi (0.3.2)
+
+Metin seçildiğinde **Özgün boyut, renk ve yazı tipini otomatik koru** varsayılan olarak açıktır. Dijital PDF'lerde punto, renk, kalınlık, italik ve satır tabanı kaynak metinden okunur; uygun karakterleri içeren gömülü font yeniden kullanılır. OCR metninde görünür yazının piksellerinden renk tonu, harf yüksekliği, yakın font ve kâğıt tonu tahmin edilir. Yeni metin bu biçimle aynı satıra yerleşir. Elle biçim değiştirmek için otomatik korumayı kapatın; kopyalanan biçimi yapıştırmak da elle biçim moduna geçer.
+
 ## Geliştirme kurulumu (Windows / PowerShell)
 
 ```powershell
@@ -62,7 +66,7 @@ Windows kurulum paketi:
 npm run dist:win
 ```
 
-`dist:win` en yeni kurulum paketini ve içine gömülü OCR motorunu üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.3.1-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
+`dist:win` en yeni kurulum paketini ve içine gömülü OCR motorunu üretir, eski kullanıcı sürümünü kaldırır, yeni sürümü mevcut kullanıcıya sessizce kurar ve uygulamayı başlatır. Başarılı kurulumdan sonra eski yerel kurulum paketleri de temizlenir; yalnızca güncel sürüm tutulur. Çıktı `release/Atelier-Docs-0.3.2-Setup.exe` konumuna yazılır. Üretim sidecar API'si Electron tarafından her oturumda üretilen rastgele anahtarla korunur. Mevcut çıktı kod imzalama sertifikası olmadığı için Authenticode imzasızdır.
 
 ## macOS DMG paketleri
 

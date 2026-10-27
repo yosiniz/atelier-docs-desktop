@@ -75,6 +75,9 @@
 - [x] Kalıcı kelime güvenleri ve düşük güvenli sonuçların görsel kontrolü
 - [x] OCR metni değiştirildiğinde eski tarama piksellerini de kaldırma
 - [x] Eski OCR katmanını yinelenmeden yeniden oluşturma
+- [x] Metin değişiminde varsayılan otomatik punto/renk/font/satır tabanı koruma
+- [x] OCR metninin gerçek görüntüsünden renk/harf yüksekliği/font ve kâğıt tonu eşleştirme
+- [x] Uygun dijital PDF gömülü fontunu yeni metinde tekrar kullanma
 - [x] Kalıcı redaksiyon aracı
 - [x] AES-256 şifreli kopya, kilit açma ve metadata araçları
 - [x] Temel DOCX/XLSX/CSV/PPTX editör entegrasyonu

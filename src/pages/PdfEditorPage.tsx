@@ -13,6 +13,7 @@ import { translateRectWithinPage, type Rect } from '../lib/geometry'
 import { useAppStore } from '../store'
 import type { TextBlock } from '../types'
 import type { OcrOptions, OcrAudit } from '../lib/api'
+import { getSourceTextStyle } from '../lib/api'
 
 type TextAlignment = 'left' | 'center' | 'right' | 'justify'
 type TextStyleClipboard = {
@@ -37,6 +38,8 @@ export function PdfEditorPage() {
   const [selectedImage, setSelectedImage] = useState<PdfImageElement | null>(null)
   const [text, setText] = useState('')
   const [fontSize, setFontSize] = useState(11)
+  const [autoStyle, setAutoStyle] = useState(true)
+  const [styleLoading, setStyleLoading] = useState(false)
   const [color, setColor] = useState('#111827')
   const [fontFamily, setFontFamily] = useState('Arial')
   const [bold, setBold] = useState(false)
@@ -124,9 +127,24 @@ export function PdfEditorPage() {
   const selectBlock = (block: TextBlock) => {
     if (mode !== 'edit') return
     setSelectedImage(null)
+    setAutoStyle(true)
     setSelected(block); setText(block.text); setFontSize(Math.round(block.font_size * 100) / 100); setColor(block.color)
     setBold(block.bold); setItalic(block.italic); setUnderline(false); setAlign('left'); setFontFamily(block.font || 'Arial'); setEditRect([...block.bbox])
   }
+
+  useEffect(() => {
+    if (!selected || !document || !autoStyle) { setStyleLoading(false); return }
+    let cancelled = false
+    setStyleLoading(true)
+    getSourceTextStyle(document.id, page, selected.bbox, selected.text).then((style) => {
+      if (cancelled) return
+      setFontSize(Math.round(style.font_size * 100) / 100); setColor(style.color)
+      setFontFamily(style.font_family); setBold(style.bold); setItalic(style.italic)
+    }).catch((error) => {
+      if (!cancelled) setToast({ message: error instanceof Error ? error.message : 'Metin biçimi okunamadı', kind: 'error' })
+    }).finally(() => { if (!cancelled) setStyleLoading(false) })
+    return () => { cancelled = true }
+  }, [selected, document, page, autoStyle])
 
   const chooseMode = (nextMode: typeof mode) => {
     setMode(nextMode); setSelected(null); setSelectedImage(null); setEditRect(null); setDraftRect(null); setDragStart(null)
@@ -160,6 +178,7 @@ export function PdfEditorPage() {
 
   const pasteTextStyle = () => {
     if (!copiedTextStyle) return
+    setAutoStyle(false)
     setFontSize(copiedTextStyle.fontSize)
     setFontFamily(copiedTextStyle.fontFamily)
     setColor(copiedTextStyle.color)
@@ -173,6 +192,7 @@ export function PdfEditorPage() {
   const applyEdit = () => selected && document && run(async () => {
     const result = await editText(document.id, {
       page, rect: selected.bbox, target_rect: editRect || selected.bbox, source_baseline: selected.baseline, text, original_text: selected.text,
+      preserve_style: autoStyle,
       style: { font_size: fontSize, font_family: fontFamily, color, align, bold, italic, underline },
     })
     document.pdf = result.pdf
@@ -387,6 +407,7 @@ export function PdfEditorPage() {
         source_baseline: drag.block.baseline,
         text: drag.value,
         original_text: drag.block.text,
+        preserve_style: selected?.id === drag.block.id ? autoStyle : true,
         style: drag.style,
       })
       document.pdf = result.pdf
@@ -614,15 +635,19 @@ export function PdfEditorPage() {
           <div className="selected-label"><Type size={16} /><span>Metin bloğu</span></div>
           {selected.is_ocr && <div className="security-note"><ScanText size={16} /><span>OCR metni · Güven {selected.confidence == null ? 'bilinmiyor' : '%' + Math.round(selected.confidence)}. Yazıyı kontrol edin. Değişiklikte eski tarama pikselleri de silinir.</span></div>}
           <label>Metin<textarea value={text} onChange={(event) => setText(event.target.value)} rows={7} /></label>
+          <label className="auto-style-toggle"><input type="checkbox" checked={autoStyle} onChange={(event) => setAutoStyle(event.target.checked)} /> Özgün boyut, renk ve yazı tipini otomatik koru</label>
+          {autoStyle && <div className="security-note"><Copy size={16} /><span>{styleLoading ? 'Görünen yazının biçimi okunuyor…' : `${selected.is_ocr ? 'Taramadan tahmin edilen' : 'Özgün'} biçim: ${fontFamily} · ${fontSize} pt · ${color}`}</span></div>}
+          <fieldset disabled={autoStyle} className="matched-style-fields">
           <div className="form-row"><label>Boyut<input type="number" min="4" max="144" value={fontSize} onChange={(event) => setFontSize(Number(event.target.value))} /></label><label>Renk<input type="color" value={color} onChange={(event) => setColor(event.target.value)} /></label></div>
           <div className="text-style-controls"><button className={bold ? 'active' : ''} onClick={() => setBold(!bold)} aria-label="Kalın"><b>B</b></button><button className={italic ? 'active' : ''} onClick={() => setItalic(!italic)} aria-label="İtalik"><i>I</i></button><button className={underline ? 'active' : ''} onClick={() => setUnderline(!underline)} aria-label="Altı çizili"><u>U</u></button><select aria-label="Metin hizalama" value={align} onChange={(event) => setAlign(event.target.value as typeof align)}><option value="left">Sola hizala</option><option value="center">Ortala</option><option value="right">Sağa hizala</option><option value="justify">İki yana yasla</option></select></div>
+          </fieldset>
           {editRect && <><div className="field-caption">Konum ve alan (pt)</div><div className="position-grid"><label>X<input type="number" value={Math.round(editRect[0])} onChange={(event) => updateEditRect('x', Number(event.target.value))} /></label><label>Y<input type="number" value={Math.round(editRect[1])} onChange={(event) => updateEditRect('y', Number(event.target.value))} /></label><label>Genişlik<input type="number" min="8" value={Math.round(editRect[2] - editRect[0])} onChange={(event) => updateEditRect('width', Number(event.target.value))} /></label><label>Yükseklik<input type="number" min="8" value={Math.round(editRect[3] - editRect[1])} onChange={(event) => updateEditRect('height', Number(event.target.value))} /></label></div></>}
-          <label>Yazı tipi<select value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>{!["Arial", "Times New Roman", "Courier New", "Segoe UI", "Calibri"].includes(fontFamily) && <option value={fontFamily}>{fontFamily}</option>}<option>Arial</option><option>Times New Roman</option><option>Courier New</option><option>Segoe UI</option><option>Calibri</option></select></label>
+          <label>Yazı tipi<select disabled={autoStyle} value={fontFamily} onChange={(event) => setFontFamily(event.target.value)}>{!["Arial", "Times New Roman", "Courier New", "Segoe UI", "Calibri"].includes(fontFamily) && <option value={fontFamily}>{fontFamily}</option>}<option>Arial</option><option>Times New Roman</option><option>Courier New</option><option>Segoe UI</option><option>Calibri</option></select></label>
           <div className="style-clipboard-actions"><button className="secondary-button" onClick={copyTextStyle}><Copy size={15} /> Biçimi kopyala</button><button className="secondary-button" onClick={pasteTextStyle} disabled={!copiedTextStyle}><ClipboardPaste size={15} /> Biçimi yapıştır</button></div>
           {copiedTextStyle && <div className="copied-style-preview"><span className="style-color-dot" style={{ background: copiedTextStyle.color }} /><div><strong>{copiedTextStyle.fontFamily} · {copiedTextStyle.fontSize} pt</strong><small>{[copiedTextStyle.bold && 'Kalın', copiedTextStyle.italic && 'İtalik', copiedTextStyle.underline && 'Altı çizili'].filter(Boolean).join(' · ') || 'Normal'}</small></div></div>}
           <div className="drag-tip"><MousePointer2 size={16} /><span>Kutuyu sayfa üzerinde tutup sürükleyin; bıraktığınız konum otomatik kaydedilir.</span></div>
           <div className="security-note"><Save size={16} /><span>Eski içerik PDF akışından kalıcı olarak silinir; yalnızca üzeri kapatılmaz.</span></div>
-          <button className="primary-button full" onClick={applyEdit} disabled={busy}>{busy ? <LoaderCircle className="spin" size={17} /> : <Save size={17} />} Değişikliği uygula</button>
+          <button className="primary-button full" onClick={applyEdit} disabled={busy || (autoStyle && styleLoading)}>{busy ? <LoaderCircle className="spin" size={17} /> : <Save size={17} />} Değişikliği uygula</button>
         </div> : selectedImage && editRect && mode === 'edit' ? <div className="properties-form">
           <div className="selected-label image"><Images size={16} /><span>Görsel nesnesi</span></div>
           <div className="object-metrics"><span>Piksel</span><strong>{selectedImage.pixel_width} × {selectedImage.pixel_height}</strong><span>Sayfa alanı</span><strong>{Math.round(editRect[2] - editRect[0])} × {Math.round(editRect[3] - editRect[1])} pt</strong></div>
