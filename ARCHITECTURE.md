@@ -31,6 +31,8 @@ Bu yöntem yalnızca beyaz kutu bindirme değildir. Karmaşık alt-küme fontlar
 
 ## Güvenlik sınırları
 
+Windows Birlikte aç kayıtları kullanıcı kapsamında NSIS tarafından kurulur. OS dosya yolları yalnızca Electron ana sürecinde doğrulanır; renderer keyfi dosya yolu okutamaz. Dosya ana süreçten yerel API'ye aktarılır ve renderer yalnızca mevcut yükleme yanıtını alır. İkinci uygulama çağrıları tek örnek kilidiyle çalışan pencereye iletilir.
+
 - Electron renderer içinde Node entegrasyonu kapalı, context isolation ve sandbox açıktır.
 - Dosya adları normalize edilir; belge kimlikleri yalnızca 32 haneli hex kabul eder.
 - Yükleme 250 MB ile sınırlıdır ve uzantı yanında içerik doğrulaması yapılır.

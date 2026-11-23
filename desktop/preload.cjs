@@ -12,4 +12,10 @@ contextBridge.exposeInMainWorld('desktop', {
   platform: process.platform,
   apiBase: `http://127.0.0.1:${apiPort}/api`,
   apiToken,
+  takeOpenFile: () => ipcRenderer.invoke('files:take'),
+  onOpenFiles: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('files:available', listener)
+    return () => ipcRenderer.removeListener('files:available', listener)
+  },
 })

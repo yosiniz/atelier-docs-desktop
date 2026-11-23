@@ -39,6 +39,10 @@ Tanıma sonrası sözcüklerin güven değerleri kaydedilir; düşük güvenli s
 
 Metin seçildiğinde **Özgün boyut, renk ve yazı tipini otomatik koru** varsayılan olarak açıktır. Dijital PDF'lerde punto, renk, kalınlık, italik ve satır tabanı kaynak metinden okunur; uygun karakterleri içeren gömülü font yeniden kullanılır. OCR metninde görünür yazının piksellerinden renk tonu, harf yüksekliği, yakın font ve kâğıt tonu tahmin edilir. Yeni metin bu biçimle aynı satıra yerleşir. Elle biçim değiştirmek için otomatik korumayı kapatın; kopyalanan biçimi yapıştırmak da elle biçim moduna geçer.
 
+## Windows “Birlikte aç” (0.3.3)
+
+Kurulum PDF, desteklenen görsel ve Office dosyalarında Atelier Docs'u **Birlikte aç** adayı olarak kaydeder. Dosyaya sağ tıklayıp **Birlikte aç → Atelier Docs** seçin. Windows listeyi daraltırsa **Başka bir uygulama seç** altında görünür. Mevcut varsayılan uygulama değiştirilmez. Uygulama zaten açıksa seçilen dosya mevcut pencereye iletilir; boşluk ve Türkçe karakter içeren yollar desteklenir. Kaldırıcı yalnızca Atelier Docs'a ait dosya türü kayıtlarını temizler.
+
 ## Geliştirme kurulumu (Windows / PowerShell)
 
 ```powershell

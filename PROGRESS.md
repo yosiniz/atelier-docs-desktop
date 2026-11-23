@@ -1,5 +1,13 @@
 # İlerleme
 
+## 23 Kasım 2026 — 0.3.3 Windows Birlikte aç
+
+- NSIS kurulumuna mevcut varsayılanları değiştirmeyen kullanıcı kapsamlı OpenWithProgids, Applications/SupportedTypes ve RegisteredApplications kayıtları eklendi. Kaldırıcı yalnızca bu uygulamaya ait kayıtları siler.
+- Windows komut satırı dosyaları güvenli biçimde ayrıştırılıyor; dosya sınırı/türü kontrol edilerek yerel API'ye aktarılıyor. İlk açılış ve uygulama açıkken gelen dosyalar aynı pencereye yönlendiriliyor. PDF/görsel/Office uygun editörde açılıyor.
+- Electron tek örnek kilidi, başlangıç kuyruğu, güvenli preload bildirimi ve React StrictMode altında bir kez tüketilen açılış akışı eklendi.
+- 6 arayüz ve 2 masaüstü testi geçti; Türkçe/boşluklu yollar, yinelenen argümanlar, ilk açılış ve ikinci dosya iletimi kontrol edildi. TypeScript ve üretim derlemesi geçti.
+- 0.3.3 kuruldu ve açıldı. Gerçek kullanıcı kayıt defterinde 13 OpenWithProgids kaydı ve tırnaklı dosya açma komutu doğrulandı. Kurulu backend'e ana süreç dosya yükleme testi geçti; PDF UserChoice kurulum öncesindeki MSEdgePDF olarak kaldı.
+
 ## 27 Ekim 2026 — 0.3.2 otomatik biçim koruma
 
 - Metin değiştirirken ve taşırken otomatik kaynak biçimi koruma varsayılan açıldı. Dijital PDF'de kaynak punto, renk, kalınlık/italik ve satır tabanı korunuyor; uygun gömülü font yeniden kullanılıyor.

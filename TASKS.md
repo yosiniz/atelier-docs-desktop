@@ -9,6 +9,8 @@
 - [x] Ana sayfa, tema ve navigasyon
 - [x] Nötr, tek vurgulu açık/koyu tasarım sistemi
 - [x] Paketlenmiş Windows kurulum dosyası
+- [x] Windows Birlikte aç kaydı ve PDF/görsel/Office dosyalarının doğrudan açılması
+- [x] Açık uygulamaya ikinci dosya iletme ve tek uygulama örneği
 
 ## Faz 2 — PDF temel araçları
 

@@ -4,9 +4,26 @@ const fs = require('node:fs')
 const net = require('node:net')
 const crypto = require('node:crypto')
 const { spawn, spawnSync } = require('node:child_process')
+const { filesFromArguments, uploadLocalFile } = require('./open-files.cjs')
 
 const isDev = !app.isPackaged
 const smokeMode = process.argv.includes('--smoke-test')
+const ownsInstance = smokeMode || app.requestSingleInstanceLock()
+if (!ownsInstance) app.quit()
+let mainWindow = null
+const pendingFiles = filesFromArguments(process.argv)
+
+function queueFiles(files) {
+  pendingFiles.push(...files)
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+    mainWindow.webContents.send('files:available')
+  }
+}
+
+app.on('second-instance', (_event, argv) => queueFiles(filesFromArguments(argv)))
+app.on('open-file', (event, filePath) => { event.preventDefault(); queueFiles(filesFromArguments([filePath])) })
 let backendProcess = null
 let apiPort = 8765
 let apiToken = ''
@@ -80,6 +97,8 @@ function createWindow() {
       additionalArguments: [`--atelier-api-port=${apiPort}`, `--atelier-api-token=${apiToken}`],
     },
   })
+  mainWindow = window
+  window.on('closed', () => { if (mainWindow === window) mainWindow = null })
 
   if (smokeMode) {
     const output = process.env.ATELIER_SMOKE_OUTPUT || path.join(app.getPath('temp'), 'atelier-docs-smoke.json')
@@ -123,8 +142,14 @@ ipcMain.handle('file:write', async (_event, targetPath, bytes) => {
   return { ok: true, size: data.byteLength }
 })
 ipcMain.handle('shell:show-item', (_event, targetPath) => shell.showItemInFolder(targetPath))
+ipcMain.handle('files:take', async () => {
+  const filePath = pendingFiles.shift()
+  if (!filePath) return null
+  return uploadLocalFile(filePath, `http://127.0.0.1:${apiPort}/api`, apiToken)
+})
 
 app.whenReady().then(async () => {
+  if (!ownsInstance) return
   try {
     await startPackagedBackend()
   } catch (error) {

@@ -8,5 +8,7 @@ interface Window {
     platform: string
     apiBase: string
     apiToken: string
+    takeOpenFile: () => Promise<import('./types').UploadedDocument | null>
+    onOpenFiles: (callback: () => void) => () => void
   }
 }

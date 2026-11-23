@@ -1,6 +1,6 @@
 {
   "name": "atelier-docs-desktop",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "Atelier Docs",
   "private": true,
   "type": "module",
@@ -18,7 +18,8 @@
     "dist:win": "npm run build && npm run build:backend && npm run prepare:ocr:win && electron-builder --win nsis && npm run install:latest",
     "dist:mac": "npm run build && npm run build:backend:mac && electron-builder --mac dmg",
     "install:latest": "node scripts/install-latest.cjs",
-    "test": "npm run test:frontend && npm run test:backend",
+    "test": "npm run test:frontend && npm run test:desktop && npm run test:backend",
+    "test:desktop": "node --test desktop/open-files.node-check.cjs",
     "test:frontend": "vitest run",
     "test:backend": ".venv\\Scripts\\python.exe -m pytest backend/tests -q",
     "typecheck": "tsc -b --pretty false"
@@ -94,6 +95,7 @@
       "hardenedRuntime": false
     },
     "nsis": {
+      "include": "desktop/file-associations.nsh",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": false,
